@@ -702,7 +702,11 @@ func getTailscaleStatus() *TailscaleStatus {
 	}
 
 	hostname := getEnv("TS_HOSTNAME", "devbox")
-	fullHostname := getEnv("TS_FULL_HOSTNAME", hostname+".ts.net")
+	suffix := getEnv("TS_SUFFIX", "")
+	fullHostname := hostname
+	if suffix != "" {
+		fullHostname = hostname + "." + suffix
+	}
 
 	// Check funnel status
 	cmd = exec.Command("tailscale", "serve", "status")

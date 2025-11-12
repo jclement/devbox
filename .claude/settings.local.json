@@ -29,7 +29,13 @@
       "Bash(socat:*)",
       "Bash(docker image inspect:*)",
       "Bash(mkdir:*)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(tree:*)",
+      "Bash(git add:*)",
+      "Bash(docker-compose logs:*)",
+      "Bash(docker compose logs:*)",
+      "Bash(docker compose:*)",
+      "Bash(docker compose build:*)"
     ],
     "deny": [],
     "ask": []

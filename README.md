@@ -36,6 +36,9 @@ Everything is configured, everything works, and you can access it from anywhere 
 - **fish** - Friendly interactive shell (default)
 - **bash** - Available as fallback
 - **starship** - Beautiful cross-shell prompt with git integration
+  - Displays container/hostname for easy identification
+  - Git branch and status indicators
+  - Clean, minimal design
 
 ### Database & Services
 - **PostgreSQL 16** - Production-ready database
@@ -59,8 +62,8 @@ cp .env-sample .env
 # At minimum, set:
 #   - USER_UID and USER_GID (run: id -u && id -g)
 #   - USERNAME (your username)
-#   - TS_AUTHKEY (from https://login.tailscale.com/admin/settings/keys)
-#   - TS_HOSTNAME (e.g., "devbox" or "dev-myproject")
+#   - CONTAINER_NAME (used as hostname, e.g., "dev-myproject")
+#   - For Tailscale: TS_AUTHKEY and TS_SUFFIX (e.g., "your-tailnet.ts.net")
 vim .env
 ```
 
@@ -82,16 +85,16 @@ docker-compose ps
 **Tailscale Mode:**
 ```bash
 # SSH into your devbox
-ssh yourusername@your-hostname
+ssh yourusername@dev-myproject.your-tailnet.ts.net
 
 # Access services
-https://your-hostname/              # Your dev service
-https://your-hostname/code/         # VS Code
-https://your-hostname/db/           # PostgreSQL admin
-https://your-hostname/mail/         # Email testing
+https://dev-myproject.your-tailnet.ts.net/              # Your dev service
+https://dev-myproject.your-tailnet.ts.net/code/         # VS Code
+https://dev-myproject.your-tailnet.ts.net/db/           # PostgreSQL admin
+https://dev-myproject.your-tailnet.ts.net/mail/         # Email testing
 
 # Connect to PostgreSQL
-psql -h your-hostname -U postgres -d devdb
+psql -h dev-myproject.your-tailnet.ts.net -U postgres -d devdb
 ```
 
 **Local Mode (TS_AUTHKEY not set):**
@@ -117,9 +120,9 @@ Perfect for accessing your devbox from anywhere:
 
 ```bash
 # In .env
+CONTAINER_NAME=dev-myproject         # Used as Tailscale hostname
 TS_AUTHKEY=tskey-auth-xxxxxxxxxxxxxxxxxxxxx
-TS_HOSTNAME=dev-myproject
-TS_FULL_HOSTNAME=dev-myproject.your-tailnet.ts.net
+TS_SUFFIX=your-tailnet.ts.net        # Full hostname becomes: dev-myproject.your-tailnet.ts.net
 ```
 
 **Benefits:**
@@ -127,6 +130,7 @@ TS_FULL_HOSTNAME=dev-myproject.your-tailnet.ts.net
 - Automatic TLS certificates
 - No port forwarding needed
 - No exposed ports on host
+- Hostname automatically matches container name
 
 **Requirements:**
 - Tailscale account and auth key
@@ -315,10 +319,10 @@ docker-compose up -d
 Or use Tailscale mode with unique hostnames:
 ```bash
 # Project 1
-TS_HOSTNAME=dev-frontend
+CONTAINER_NAME=dev-frontend    # Hostname: dev-frontend.your-tailnet.ts.net
 
 # Project 2
-TS_HOSTNAME=dev-backend
+CONTAINER_NAME=dev-backend     # Hostname: dev-backend.your-tailnet.ts.net
 ```
 
 ## mise Integration
@@ -352,7 +356,22 @@ DEV_SERVICE_PORT=8080
 # Your app at http://localhost:8400/ will proxy to container:8080
 ```
 
+### Using Pre-built Images
+
+The easiest way to use devbox is with the pre-built images from GitHub Container Registry:
+
+```bash
+# Default - pulls ghcr.io/jclement/devbox:latest
+docker-compose pull
+docker-compose up -d
+
+# Or use a specific version
+IMAGE_NAME=ghcr.io/jclement/devbox:v1.0.0 docker-compose up -d
+```
+
 ### Build from Source
+
+If you want to customize the image:
 
 ```bash
 # Build custom image
@@ -361,6 +380,12 @@ docker-compose build
 # Use specific tag
 IMAGE_NAME=myusername/devbox:custom docker-compose build
 ```
+
+The project structure:
+- `docker/` - All Docker-related files (Dockerfile, entrypoint.sh, configs)
+- `.github/workflows/` - CI/CD automation for multi-arch builds
+- `scripts/` - Helper scripts
+- `.env-sample` - Configuration template
 
 ### Persistent Tailscale State
 
@@ -481,12 +506,14 @@ docker-compose up -d
 
 This is designed to be published to:
 - **GitHub:** github.com/jclement/devbox
-- **Docker Hub:** docker pull jclement/devbox:latest
+- **Container Registry:** `docker pull ghcr.io/jclement/devbox:latest`
+
+Pre-built multi-architecture images (amd64, arm64) are automatically built and published to GitHub Container Registry on every commit to main.
 
 ## Future Enhancements
 
-- [ ] Pre-built multi-arch images (amd64, arm64)
-- [ ] GitHub Actions for automated builds
+- [x] Pre-built multi-arch images (amd64, arm64)
+- [x] GitHub Actions for automated builds
 - [ ] Additional database options (MySQL, Redis)
 - [ ] Language-specific variants (node-devbox, python-devbox, etc.)
 - [ ] Kubernetes/Helm deployment option

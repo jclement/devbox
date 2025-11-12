@@ -1,6 +1,2 @@
 # Local configuration files
-.devbox
 .env
-
-# Database snapshots (user data)
-.snapshots/

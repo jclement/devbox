@@ -4,8 +4,8 @@ services:
   devbox:
     build:
       context: .
-      dockerfile: Dockerfile
-    image: ${IMAGE_NAME:-jclement/devbox:latest}
+      dockerfile: docker/Dockerfile
+    image: ${IMAGE_NAME:-ghcr.io/jclement/devbox:latest}
     container_name: ${CONTAINER_NAME:-devbox}
     hostname: ${CONTAINER_NAME:-devbox}
 
@@ -31,8 +31,8 @@ services:
 
       # Tailscale Configuration (leave empty for local mode)
       TS_AUTHKEY: ${TS_AUTHKEY:-}
-      TS_HOSTNAME: ${TS_HOSTNAME:-}
-      TS_FULL_HOSTNAME: ${TS_FULL_HOSTNAME:-}
+      TS_HOSTNAME: ${TS_HOSTNAME:-${CONTAINER_NAME:-devbox}}
+      TS_SUFFIX: ${TS_SUFFIX:-}
 
       # Service Configuration
       DEV_SERVICE_PORT: ${DEV_SERVICE_PORT:-3000}

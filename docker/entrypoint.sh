@@ -280,6 +280,25 @@ if status is-interactive
 end
 EOF
 
+# Configure starship to show hostname
+mkdir -p ${USER_HOME}/.config
+cat > ${USER_HOME}/.config/starship.toml <<'STARSHIP_EOF'
+# Show container/hostname in prompt
+[hostname]
+ssh_only = false
+format = "[$hostname](bold blue) "
+disabled = false
+
+[character]
+success_symbol = "[➜](bold green)"
+error_symbol = "[➜](bold red)"
+
+[directory]
+truncation_length = 3
+truncate_to_repo = true
+format = "[$path]($style)[$read_only]($read_only_style) "
+STARSHIP_EOF
+
 # Configure bash (fallback)
 if [ -f "${USER_HOME}/.bashrc" ]; then
     grep -q "TERM=" ${USER_HOME}/.bashrc || echo 'export TERM=xterm-256color' >> ${USER_HOME}/.bashrc
@@ -349,6 +368,13 @@ if [ -n "$TS_AUTHKEY" ]; then
     if [ -z "$TS_HOSTNAME" ]; then
         echo -e "${RED}Error: TS_HOSTNAME environment variable is required when using Tailscale${NC}"
         exit 1
+    fi
+
+    # Compute full hostname if suffix is provided
+    if [ -n "$TS_SUFFIX" ]; then
+        TS_FULL_HOSTNAME="${TS_HOSTNAME}.${TS_SUFFIX}"
+    else
+        TS_FULL_HOSTNAME="${TS_HOSTNAME}"
     fi
 
     # Authenticate with Tailscale
@@ -461,19 +487,19 @@ if [ -n "$TS_AUTHKEY" ]; then
     echo -e "${GREEN}📡 Networking Mode: ${NC}${YELLOW}Tailscale (Remote Access)${NC}"
     echo ""
     echo -e "${GREEN}🔐 SSH Access:${NC}"
-    echo -e "   ${BLUE}ssh ${USERNAME}@${TS_HOSTNAME}${NC}"
+    echo -e "   ${BLUE}ssh ${USERNAME}@${TS_FULL_HOSTNAME}${NC}"
     echo ""
-    echo -e "${GREEN}🌐 Web Services:${NC} ${YELLOW}https://${TS_HOSTNAME}${NC}"
-    echo -e "   ${BLUE}├─${NC} Main App:     ${YELLOW}https://${TS_HOSTNAME}/${NC}"
-    echo -e "   ${BLUE}├─${NC} VS Code:      ${YELLOW}https://${TS_HOSTNAME}/devbox/code/${NC}"
-    echo -e "   ${BLUE}├─${NC} PostgreSQL:   ${YELLOW}https://${TS_HOSTNAME}/devbox/db/${NC}"
-    echo -e "   ${BLUE}├─${NC} MailHog:      ${YELLOW}https://${TS_HOSTNAME}/devbox/mail/${NC}"
-    echo -e "   ${BLUE}├─${NC} Files:        ${YELLOW}https://${TS_HOSTNAME}/devbox/files/${NC}"
-    echo -e "   ${BLUE}├─${NC} Logs:         ${YELLOW}https://${TS_HOSTNAME}/devbox/logs/${NC}"
-    echo -e "   ${BLUE}└─${NC} Status:       ${YELLOW}https://${TS_HOSTNAME}/devbox/${NC}"
+    echo -e "${GREEN}🌐 Web Services:${NC} ${YELLOW}https://${TS_FULL_HOSTNAME}${NC}"
+    echo -e "   ${BLUE}├─${NC} Main App:     ${YELLOW}https://${TS_FULL_HOSTNAME}/${NC}"
+    echo -e "   ${BLUE}├─${NC} VS Code:      ${YELLOW}https://${TS_FULL_HOSTNAME}/devbox/code/${NC}"
+    echo -e "   ${BLUE}├─${NC} PostgreSQL:   ${YELLOW}https://${TS_FULL_HOSTNAME}/devbox/db/${NC}"
+    echo -e "   ${BLUE}├─${NC} MailHog:      ${YELLOW}https://${TS_FULL_HOSTNAME}/devbox/mail/${NC}"
+    echo -e "   ${BLUE}├─${NC} Files:        ${YELLOW}https://${TS_FULL_HOSTNAME}/devbox/files/${NC}"
+    echo -e "   ${BLUE}├─${NC} Logs:         ${YELLOW}https://${TS_FULL_HOSTNAME}/devbox/logs/${NC}"
+    echo -e "   ${BLUE}└─${NC} Status:       ${YELLOW}https://${TS_FULL_HOSTNAME}/devbox/${NC}"
     echo ""
     echo -e "${GREEN}🗄️  Database:${NC}"
-    echo -e "   ${BLUE}psql -h ${TS_HOSTNAME} -U postgres -d ${POSTGRES_DB:-devdb}${NC}"
+    echo -e "   ${BLUE}psql -h ${TS_FULL_HOSTNAME} -U postgres -d ${POSTGRES_DB:-devdb}${NC}"
     echo ""
 else
     # Local mode - port forwarding

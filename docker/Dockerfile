@@ -169,10 +169,10 @@ RUN echo 'eval "$(/usr/local/bin/mise activate bash)"' >> /home/devbox/.bashrc \
 USER root
 
 # Copy configuration files
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-COPY supervisord.conf /etc/supervisor/conf.d/devbox.conf
-COPY Caddyfile.template /etc/caddy/Caddyfile.template
-COPY Caddyfile.template /etc/caddy/Caddyfile
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY docker/supervisord.conf /etc/supervisor/conf.d/devbox.conf
+COPY docker/Caddyfile.template /etc/caddy/Caddyfile.template
+COPY docker/Caddyfile.template /etc/caddy/Caddyfile
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Copy helper scripts
