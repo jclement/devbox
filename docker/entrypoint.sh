@@ -65,7 +65,7 @@ if [ "$CURRENT_UID" != "$TARGET_UID" ] || [ "$CURRENT_GID" != "$TARGET_GID" ] ||
     fi
 
     # Ensure fish is the default shell
-    chsh -s /usr/bin/fish $TARGET_USERNAME 2>/dev/null || true
+    chsh -s /bin/bash $TARGET_USERNAME 2>/dev/null || true
 
     # Ensure user has passwordless sudo
     echo "${TARGET_USERNAME} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${TARGET_USERNAME}
@@ -253,33 +253,6 @@ fi
 # Ensure correct ownership
 chown ${USERNAME}:${USERNAME} ${USER_HOME}/.gitconfig 2>/dev/null || true
 
-# Configure fish and bash for the runtime user
-echo -e "${GREEN}Configuring shell for ${USERNAME}...${NC}"
-
-# Ensure fish config exists
-mkdir -p ${USER_HOME}/.config/fish
-cat > ${USER_HOME}/.config/fish/config.fish <<EOF
-# Terminal colors
-set -gx TERM xterm-256color
-set -gx COLORTERM truecolor
-
-# PostgreSQL defaults (used by psql when no args provided)
-set -gx PGHOST localhost
-set -gx PGUSER postgres
-set -gx PGDATABASE ${POSTGRES_DB:-devdb}
-
-# Auto sudo for apt commands
-alias apt="sudo apt"
-alias apt-get="sudo apt-get"
-
-if status is-interactive
-    # mise activation (system-wide installation)
-    /usr/local/bin/mise activate fish | source
-    # starship prompt
-    starship init fish | source
-end
-EOF
-
 # Configure starship to show hostname
 mkdir -p ${USER_HOME}/.config
 cat > ${USER_HOME}/.config/starship.toml <<'STARSHIP_EOF'
@@ -300,16 +273,44 @@ format = "[$path]($style)[$read_only]($read_only_style) "
 STARSHIP_EOF
 
 # Configure bash (fallback)
-if [ -f "${USER_HOME}/.bashrc" ]; then
-    grep -q "TERM=" ${USER_HOME}/.bashrc || echo 'export TERM=xterm-256color' >> ${USER_HOME}/.bashrc
-    grep -q "COLORTERM=" ${USER_HOME}/.bashrc || echo 'export COLORTERM=truecolor' >> ${USER_HOME}/.bashrc
-    grep -q "PGHOST=" ${USER_HOME}/.bashrc || echo 'export PGHOST=localhost' >> ${USER_HOME}/.bashrc
-    grep -q "PGUSER=" ${USER_HOME}/.bashrc || echo 'export PGUSER=postgres' >> ${USER_HOME}/.bashrc
-    grep -q "PGDATABASE=" ${USER_HOME}/.bashrc || echo "export PGDATABASE=${POSTGRES_DB:-devdb}" >> ${USER_HOME}/.bashrc
-    grep -q "mise activate" ${USER_HOME}/.bashrc || echo 'eval "$(/usr/local/bin/mise activate bash)"' >> ${USER_HOME}/.bashrc
-    grep -q "starship init" ${USER_HOME}/.bashrc || echo 'eval "$(starship init bash)"' >> ${USER_HOME}/.bashrc
-    grep -q "alias apt=" ${USER_HOME}/.bashrc || echo 'alias apt="sudo apt"' >> ${USER_HOME}/.bashrc
-    grep -q "alias apt-get=" ${USER_HOME}/.bashrc || echo 'alias apt-get="sudo apt-get"' >> ${USER_HOME}/.bashrc
+# Create .bashrc if it doesn't exist
+if [ ! -f "${USER_HOME}/.bashrc" ]; then
+    echo -e "${GREEN}Creating .bashrc for ${USERNAME}...${NC}"
+    touch ${USER_HOME}/.bashrc
+    chown ${USERNAME}:${USERNAME} ${USER_HOME}/.bashrc
+fi
+
+# Configure .bashrc with environment variables and aliases
+grep -q "TERM=" ${USER_HOME}/.bashrc || echo 'export TERM=xterm-256color' >> ${USER_HOME}/.bashrc
+grep -q "COLORTERM=" ${USER_HOME}/.bashrc || echo 'export COLORTERM=truecolor' >> ${USER_HOME}/.bashrc
+grep -q "PGHOST=" ${USER_HOME}/.bashrc || echo 'export PGHOST=localhost' >> ${USER_HOME}/.bashrc
+grep -q "PGUSER=" ${USER_HOME}/.bashrc || echo 'export PGUSER=postgres' >> ${USER_HOME}/.bashrc
+grep -q "PGDATABASE=" ${USER_HOME}/.bashrc || echo "export PGDATABASE=${POSTGRES_DB:-devdb}" >> ${USER_HOME}/.bashrc
+grep -q "alias apt=" ${USER_HOME}/.bashrc || echo 'alias apt="sudo apt"' >> ${USER_HOME}/.bashrc
+grep -q "alias apt-get=" ${USER_HOME}/.bashrc || echo 'alias apt-get="sudo apt-get"' >> ${USER_HOME}/.bashrc
+
+# Only run mise and starship in interactive shells (fixes VS Code Remote-SSH timeout)
+if ! grep -q "PS1" ${USER_HOME}/.bashrc; then
+    cat >> ${USER_HOME}/.bashrc <<'BASHRC_INTERACTIVE'
+
+# Only load interactive tools in interactive shells
+if [ -n "$PS1" ]; then
+    eval "$(/usr/local/bin/mise activate bash)"
+    eval "$(starship init bash)"
+fi
+BASHRC_INTERACTIVE
+fi
+
+# Create .bash_profile that sources .bashrc for login shells
+if [ ! -f "${USER_HOME}/.bash_profile" ]; then
+    echo -e "${GREEN}Creating .bash_profile for ${USERNAME}...${NC}"
+    cat > ${USER_HOME}/.bash_profile <<'BASH_PROFILE'
+# Source .bashrc if it exists
+if [ -f ~/.bashrc ]; then
+    . ~/.bashrc
+fi
+BASH_PROFILE
+    chown ${USERNAME}:${USERNAME} ${USER_HOME}/.bash_profile
 fi
 
 # Configure code-server
@@ -531,7 +532,6 @@ else
     echo -e "   ${BLUE}├─${NC} PostgreSQL:   ${YELLOW}http://localhost:${ACTUAL_CADDY_PORT}/devbox/db/${NC}"
     echo -e "   ${BLUE}├─${NC} MailHog:      ${YELLOW}http://localhost:${ACTUAL_CADDY_PORT}/devbox/mail/${NC}"
     echo -e "   ${BLUE}├─${NC} Files:        ${YELLOW}http://localhost:${ACTUAL_CADDY_PORT}/devbox/files/${NC}"
-    echo -e "   ${BLUE}├─${NC} Logs:         ${YELLOW}http://localhost:${ACTUAL_CADDY_PORT}/devbox/logs/${NC}"
     echo -e "   ${BLUE}└─${NC} Status:       ${YELLOW}http://localhost:${ACTUAL_CADDY_PORT}/devbox/${NC}"
     echo ""
     echo -e "${GREEN}🗄️  Database:${NC}"

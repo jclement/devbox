@@ -14,7 +14,7 @@ ENV LANGUAGE=en_US:en
 ENV LC_ALL=en_US.UTF-8
 
 # Install base dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt -y upgrade && apt-get install -y \
     curl \
     wget \
     git \
@@ -31,9 +31,7 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     unzip \
     fzf \
-    fish \
-    socat \
-    && rm -rf /var/lib/apt/lists/*
+    socat 
 
 # Install starship prompt
 RUN curl -sS https://starship.rs/install.sh | sh -s -- -y
@@ -137,9 +135,9 @@ RUN set -e; \
         groupadd -g 9999 devbox; \
         GROUP_NAME="devbox"; \
     fi; \
-    # Create user with fish as default shell
-    useradd -m -u 9999 -g $GROUP_NAME -s /usr/bin/fish devbox || \
-    (echo "UID 9999 exists, modifying existing user" && usermod -l devbox -d /home/devbox -g $GROUP_NAME -s /usr/bin/fish $(id -un 9999)); \
+    # Create user with bash as default shell
+    useradd -m -u 9999 -g $GROUP_NAME -s /bin/bash devbox || \
+    (echo "UID 9999 exists, modifying existing user" && usermod -l devbox -d /home/devbox -g $GROUP_NAME -s /bin/bash $(id -un 9999)); \
     # Add sudo privileges
     echo "devbox ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/devbox; \
     chmod 0440 /etc/sudoers.d/devbox
@@ -152,16 +150,7 @@ RUN mkdir -p /workspace \
 USER devbox
 WORKDIR /home/devbox
 
-# Configure fish shell with mise and starship
-RUN mkdir -p /home/devbox/.config/fish \
-    && echo 'if status is-interactive' >> /home/devbox/.config/fish/config.fish \
-    && echo '    # mise activation' >> /home/devbox/.config/fish/config.fish \
-    && echo '    /usr/local/bin/mise activate fish | source' >> /home/devbox/.config/fish/config.fish \
-    && echo '    # starship prompt' >> /home/devbox/.config/fish/config.fish \
-    && echo '    starship init fish | source' >> /home/devbox/.config/fish/config.fish \
-    && echo 'end' >> /home/devbox/.config/fish/config.fish
-
-# Configure bash with mise and starship (for fallback)
+# Configure bash with mise and starship
 RUN echo 'eval "$(/usr/local/bin/mise activate bash)"' >> /home/devbox/.bashrc \
     && echo 'eval "$(starship init bash)"' >> /home/devbox/.bashrc
 
