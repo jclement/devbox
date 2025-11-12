@@ -112,8 +112,10 @@ ENV PATH="/usr/local/go/bin:${PATH}"
 
 # Install Node.js LTS (using NodeSource repository)
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
+    && apt-get update \
     && apt-get install -y nodejs \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && node --version && npm --version
 
 # Install Claude Code globally
 RUN npm install -g @anthropic-ai/claude-code
