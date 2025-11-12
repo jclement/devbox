@@ -1,0 +1,76 @@
+#!/bin/bash
+set -e
+
+# Colors for output
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+# Get dev service port
+DEV_PORT="${DEV_SERVICE_PORT:-3000}"
+HOSTNAME="${TS_HOSTNAME:-devbox}"
+
+# Check current funnel status
+echo -e "${BLUE}Checking Tailscale Funnel status...${NC}"
+
+# Get the funnel status
+FUNNEL_STATUS=$(tailscale serve status 2>/dev/null || echo "")
+
+if echo "$FUNNEL_STATUS" | grep -q "funnel"; then
+    # Funnel is currently ON
+    echo -e "${GREEN}Funnel is currently ENABLED${NC}"
+    echo -e "${YELLOW}Your dev service is publicly accessible at:${NC}"
+    echo -e "${BLUE}https://${HOSTNAME}.ts.net${NC}"
+    echo ""
+    read -p "Do you want to DISABLE public access? (y/N): " CONFIRM
+
+    if [[ "$CONFIRM" =~ ^[Yy]$ ]]; then
+        echo -e "${BLUE}Disabling Funnel...${NC}"
+
+        # Turn off funnel but keep serve
+        tailscale funnel --bg --https=443 off 2>/dev/null || true
+
+        echo -e "${GREEN}✓ Funnel disabled${NC}"
+        echo -e "${YELLOW}Your services are now only accessible on your Tailnet${NC}"
+    else
+        echo -e "${YELLOW}No changes made${NC}"
+    fi
+else
+    # Funnel is currently OFF
+    echo -e "${YELLOW}Funnel is currently DISABLED${NC}"
+    echo -e "${YELLOW}Your services are only accessible on your Tailnet${NC}"
+    echo ""
+    read -p "Do you want to ENABLE public access? (y/N): " CONFIRM
+
+    if [[ "$CONFIRM" =~ ^[Yy]$ ]]; then
+        echo -e "${BLUE}Enabling Funnel...${NC}"
+        echo -e "${YELLOW}⚠ WARNING: This will make your dev service publicly accessible!${NC}"
+        echo -e "${YELLOW}Anyone with the URL can access it.${NC}"
+        echo -e "${YELLOW}Only your main dev service (port ${DEV_PORT}) will be exposed.${NC}"
+        echo ""
+        read -p "Type 'PUBLIC' to confirm: " FINAL_CONFIRM
+
+        if [ "$FINAL_CONFIRM" = "PUBLIC" ]; then
+            # Enable funnel for the main dev service only
+            # This exposes the root of Caddy (/) which proxies to DEV_SERVICE_PORT
+            tailscale funnel --bg --https=443 on
+
+            echo -e "${GREEN}✓ Funnel enabled${NC}"
+            echo -e "${BLUE}Your dev service is now publicly accessible at:${NC}"
+            echo -e "${GREEN}https://${HOSTNAME}.ts.net${NC}"
+            echo -e ""
+            echo -e "${YELLOW}Note: /code/, /db/, and /mail/ paths are NOT publicly exposed${NC}"
+            echo -e "${YELLOW}Only your main application (/) is accessible${NC}"
+        else
+            echo -e "${YELLOW}Cancelled. Type 'PUBLIC' to enable.${NC}"
+        fi
+    else
+        echo -e "${YELLOW}No changes made${NC}"
+    fi
+fi
+
+# Show current status
+echo -e "\n${BLUE}Current Tailscale serve/funnel status:${NC}"
+tailscale serve status

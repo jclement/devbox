@@ -1,0 +1,38 @@
+:8443 {
+    # code-server at /devbox/code/
+    handle_path /devbox/code/* {
+        reverse_proxy localhost:8080
+    }
+
+    # pgweb (PostgreSQL web interface) at /devbox/db/
+    handle_path /devbox/db/* {
+        reverse_proxy localhost:8081
+    }
+
+    # MailHog web UI at /devbox/mail/
+    handle_path /devbox/mail/* {
+        reverse_proxy localhost:8025
+    }
+
+    # File Browser at /devbox/files/
+    handle_path /devbox/files/* {
+        reverse_proxy localhost:8083
+    }
+
+    # DevBox status page at /devbox/ (must come after specific /devbox/* routes)
+    handle /devbox* {
+        uri strip_prefix /devbox
+        reverse_proxy localhost:8082
+    }
+
+    # Main development service (everything else goes to user's app)
+    handle /* {
+        reverse_proxy localhost:{$DEV_SERVICE_PORT:3000}
+    }
+
+    # Enable logging
+    log {
+        output stdout
+        format console
+    }
+}

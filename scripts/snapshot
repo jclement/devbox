@@ -1,0 +1,51 @@
+#!/bin/bash
+set -e
+
+# Colors for output
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+# Use snapshots directory (mounted from host)
+SNAPSHOTS_DIR="/snapshots"
+mkdir -p "$SNAPSHOTS_DIR"
+
+# Get database connection info
+DB_NAME="${POSTGRES_DB:-devdb}"
+DB_USER="${POSTGRES_USER:-postgres}"
+DB_HOST="localhost"
+
+# Generate timestamp
+TIMESTAMP=$(date +"%Y-%m-%dT%H%M")
+
+# Check if label is provided
+if [ -n "$1" ]; then
+    LABEL="_$1"
+    FILENAME="${TIMESTAMP}${LABEL}.sql"
+else
+    FILENAME="${TIMESTAMP}.sql"
+fi
+
+SNAPSHOT_PATH="${SNAPSHOTS_DIR}/${FILENAME}"
+
+echo -e "${BLUE}Creating database snapshot...${NC}"
+echo -e "${GREEN}Database: ${DB_NAME}${NC}"
+echo -e "${GREEN}File:     ${FILENAME}${NC}"
+
+# Create the snapshot using pg_dump (using TCP/password auth)
+if pg_dump -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -F p -f "$SNAPSHOT_PATH"; then
+    # Get file size
+    SIZE=$(du -h "$SNAPSHOT_PATH" | cut -f1)
+    echo -e "${GREEN}✓ Snapshot created successfully${NC}"
+    echo -e "${BLUE}Location: ${SNAPSHOT_PATH}${NC}"
+    echo -e "${BLUE}Size:     ${SIZE}${NC}"
+
+    # List recent snapshots
+    echo -e "\n${YELLOW}Recent snapshots:${NC}"
+    ls -lht "$SNAPSHOTS_DIR" | head -6 | tail -5 | awk '{print "  " $9 " (" $5 ")"}'
+else
+    echo -e "${RED}✗ Snapshot failed${NC}"
+    exit 1
+fi

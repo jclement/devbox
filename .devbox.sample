@@ -1,0 +1,86 @@
+# ==========================================
+# NETWORKING MODE CONFIGURATION
+# ==========================================
+# You can run devbox in two modes:
+#
+# 1. TAILSCALE MODE (recommended for remote access)
+#    - Set TS_AUTHKEY and TS_HOSTNAME
+#    - Access via Tailscale hostname from anywhere
+#    - Requires working Tailscale setup
+#    - Note: May not work on macOS Docker Desktop due to networking limitations
+#
+# 2. LOCAL MODE (port forwarding)
+#    - Leave TS_AUTHKEY empty or unset
+#    - Access via localhost ports
+#    - Works on all platforms including macOS
+#    - Port mappings defined below
+#
+# ==========================================
+
+# Tailscale Configuration (optional - leave empty for local-only mode)
+# Get your auth key from: https://login.tailscale.com/admin/settings/keys
+TS_AUTHKEY=
+TS_HOSTNAME=devbox
+# Full Tailscale hostname (required for TLS certificates if using Tailscale)
+# Format: {hostname}.{tailnet_name}.ts.net
+# Find your tailnet name at: https://login.tailscale.com/admin/settings/general
+# Example: devbox.tail1234abc.ts.net
+TS_FULL_HOSTNAME=
+
+# Local Port Configuration (used when TS_AUTHKEY is not set)
+# Ports are calculated from PORT_OFFSET (00-99):
+#   - Caddy (web):  8400 + PORT_OFFSET  (range: 8400-8499)
+#   - SSH:          2200 + PORT_OFFSET  (range: 2200-2299)
+#   - PostgreSQL:   5400 + PORT_OFFSET  (range: 5400-5499)
+#
+# Example: PORT_OFFSET=5 gives you ports 8405, 2205, 5405
+PORT_OFFSET=0
+
+# User Configuration (should match your local user)
+# Run 'id -u' and 'id -g' on your local machine to get these values
+USER_UID=1000
+USER_GID=1000
+USERNAME=developer
+
+# PostgreSQL Configuration
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=devdb
+
+# Development Service Configuration
+# Port for your main development service (default: 3000)
+DEV_SERVICE_PORT=3000
+
+# Snapshots Directory (for database backups)
+# Path relative to project directory (default: .snapshots)
+# Mounted to /snapshots inside container
+SNAPSHOTS_DIR=.snapshots
+
+# User Password (optional)
+# Leave empty to disable password authentication (default)
+# When set, enables:
+#   - SSH password authentication
+#   - code-server password authentication
+# Note: SSH key authentication is always enabled
+PASSWORD=
+
+# ==========================================
+# HOOKS (Optional)
+# ==========================================
+# Execute custom commands during container lifecycle
+
+# POST_STARTUP_CMD: Command to run after all services are started
+# Examples:
+#   - npm install
+#   - bundle install
+#   - Initialize application data
+# POST_STARTUP_CMD=
+
+# DB_SEED_FILE: SQL file to load into PostgreSQL after initialization
+# Path relative to /workspace (project directory)
+# Example: DB_SEED_FILE=database/seed.sql
+# DB_SEED_FILE=
+
+# PRE_STARTUP_CMD: Command to run before services start
+# Useful for environment setup, file generation, etc.
+# PRE_STARTUP_CMD=

@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chmod:*)",
+      "Bash(docker logs:*)",
+      "Bash(cat:*)",
+      "Bash(docker start:*)",
+      "Bash(docker rm:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker stop:*)",
+      "Bash(./build.sh:*)",
+      "Bash(./start_devbox)",
+      "Bash(docker build:*)",
+      "Bash(curl:*)",
+      "Bash(/dev/null)",
+      "Bash(echo:*)",
+      "Bash(ls:*)",
+      "Bash(gpgconf:*)",
+      "Bash(gpg-connect-agent:*)",
+      "Bash(SSH_AUTH_SOCK=\"${HOME}/.gnupg/S.gpg-agent.ssh\" ssh-add:*)",
+      "Bash(brew list:*)",
+      "Bash(docker images:*)",
+      "Bash(docker run:*)",
+      "Bash(env)",
+      "Bash(docker ps:*)",
+      "Bash(pkill:*)",
+      "Bash(devbox:latest)",
+      "Bash(git config:*)",
+      "Bash(socat:*)",
+      "Bash(docker image inspect:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
