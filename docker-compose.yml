@@ -1,13 +1,10 @@
-version: '3.8'
-
 services:
   devbox:
     build:
       context: .
       dockerfile: docker/Dockerfile
     image: ${IMAGE_NAME:-ghcr.io/jclement/devbox:latest}
-    container_name: ${CONTAINER_NAME:-devbox}
-    hostname: ${CONTAINER_NAME:-devbox}
+    hostname: ${CONTAINER_NAME:-${COMPOSE_PROJECT_NAME}}
 
     # Capabilities for Tailscale (only needed if using TS_AUTHKEY)
     # For local mode only, you can comment these out
@@ -31,8 +28,11 @@ services:
 
       # Tailscale Configuration (leave empty for local mode)
       TS_AUTHKEY: ${TS_AUTHKEY:-}
-      TS_HOSTNAME: ${TS_HOSTNAME:-${CONTAINER_NAME:-devbox}}
+      TS_HOSTNAME: ${TS_HOSTNAME:-${COMPOSE_PROJECT_NAME}}
       TS_SUFFIX: ${TS_SUFFIX:-}
+
+      # Cloudflare Tunnel Configuration (optional)
+      CF_TUNNEL_TOKEN: ${CF_TUNNEL_TOKEN:-}
 
       # Service Configuration
       DEV_SERVICE_PORT: ${DEV_SERVICE_PORT:-3000}
@@ -43,7 +43,7 @@ services:
       POSTGRES_PORT: ${POSTGRES_PORT:-5400}
 
       # Container Metadata
-      CONTAINER_NAME: ${CONTAINER_NAME:-devbox}
+      CONTAINER_NAME: ${CONTAINER_NAME:-${COMPOSE_PROJECT_NAME}}
 
       # Terminal Configuration
       TERM: ${TERM:-xterm-256color}
@@ -55,12 +55,11 @@ services:
       POST_STARTUP_CMD: ${POST_STARTUP_CMD:-}
 
     volumes:
-      # Workspace - named volume for persistence
-      - workspace:/workspace
+      # Workspace - bind mount for persistence
+      - ./data/workspace:/workspace
 
-      # SSH key pair (directly mounted into .ssh)
-      - ${SSH_KEY:-~/.ssh/id_ed25519}:/home/${USERNAME:-devbox}/.ssh/id_devbox:ro
-      - ${SSH_KEY:-~/.ssh/id_ed25519}.pub:/home/${USERNAME:-devbox}/.ssh/id_devbox.pub:ro
+      # SSH directory - contains authorized_keys and any keypairs
+      - ./ssh:/home/${USERNAME:-devbox}/.ssh
 
       # Git config (read-only from host)
       - ${HOME}/.gitconfig:/home/${USERNAME:-devbox}/.gitconfig-host:ro
@@ -71,38 +70,26 @@ services:
       - ${HOME}/.vim_runtime:/home/${USERNAME:-devbox}/.vim_runtime
 
       # Database snapshots (persist on host)
-      - snapshots:/snapshots
+      - ./data/snapshots:/snapshots
 
-      # Tailscale state (ephemeral, but can be made persistent if needed)
-      - /var/lib/tailscale
+      # System state (PostgreSQL, Tailscale, SSH host keys)
+      - ./data/state:/state
 
-    ports:
-      # Only used in local mode (Tailscale mode doesn't need port mappings)
-      # Customize these in .env to run multiple instances on same host
-      - "${SSH_PORT:-2200}:22"           # SSH
-      - "${CADDY_PORT:-8400}:8443"       # Caddy (web services)
-      - "${POSTGRES_PORT:-5400}:5432"    # PostgreSQL
-
-    networks:
-      - devbox-network
+    # Ports only used in local mode (Tailscale mode doesn't need port mappings)
+    # Uncomment these in .env to run multiple instances on same host
+    #ports:
+    #  - "${SSH_PORT:-2200}:22"           # SSH
+    #  - "${CADDY_PORT:-8400}:8443"       # Caddy (web services)
+    #  - "${POSTGRES_PORT:-5400}:5432"    # PostgreSQL
 
     # Restart policy
     restart: ${RESTART_POLICY:-unless-stopped}
 
     # Health check
     healthcheck:
-      test: ["CMD", "supervisorctl", "status"]
+      test: ["CMD", "/command/s6-rc", "-a", "list"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
 
-volumes:
-  workspace:
-    name: ${CONTAINER_NAME:-devbox}-workspace
-  snapshots:
-    name: ${CONTAINER_NAME:-devbox}-snapshots
-
-networks:
-  devbox-network:
-    name: ${CONTAINER_NAME:-devbox}-network

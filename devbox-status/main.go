@@ -134,6 +134,7 @@ func handleStatus(w http.ResponseWriter, r *http.Request) {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 20px;
+            margin-top: 30px;
             margin-bottom: 20px;
         }
         .card {

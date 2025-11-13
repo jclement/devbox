@@ -1,3 +1,12 @@
 # Local configuration files
 .env
 .claude
+
+# SSH directory (contains keys and authorized_keys)
+ssh/
+
+# Data directory (bind mounts)
+data/
+
+# Built binaries
+devbox-status/devbox-status

@@ -1,0 +1,13 @@
+[hostname]
+ssh_only = false
+format = "[$hostname](bold blue) "
+disabled = false
+
+[character]
+success_symbol = "[➜](bold green)"
+error_symbol = "[➜](bold red)"
+
+[directory]
+truncation_length = 3
+truncate_to_repo = true
+format = "[$path]($style)[$read_only]($read_only_style) "

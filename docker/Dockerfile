@@ -1,3 +1,12 @@
+# Build stage for devbox-status
+FROM golang:1.21-alpine AS builder
+WORKDIR /build
+COPY devbox-status/go.mod devbox-status/go.sum ./
+RUN go mod download
+COPY devbox-status/ ./
+RUN CGO_ENABLED=0 GOOS=linux go build -o devbox-status .
+
+# Main image
 FROM ubuntu:22.04
 
 # Avoid prompts from apt
@@ -13,7 +22,7 @@ ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US:en
 ENV LC_ALL=en_US.UTF-8
 
-# Install base dependencies
+# Install base dependencies (minimal set needed for service scripts)
 RUN apt-get update && apt -y upgrade && apt-get install -y \
     curl \
     wget \
@@ -21,27 +30,28 @@ RUN apt-get update && apt -y upgrade && apt-get install -y \
     sudo \
     openssh-server \
     vim \
+    zsh \
+    tmux \
     ca-certificates \
     gnupg \
     gnupg-agent \
     pinentry-curses \
-    scdaemon \
     lsb-release \
-    supervisor \
+    xz-utils \
     build-essential \
     unzip \
+    ripgrep \
     fzf \
-    socat 
-
-# Install starship prompt
-RUN curl -sS https://starship.rs/install.sh | sh -s -- -y
-
-# Install PostgreSQL 16
-RUN echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
-    && wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
-    && apt-get update \
-    && apt-get install -y postgresql-16 postgresql-contrib-16 \
+    socat \
     && rm -rf /var/lib/apt/lists/*
+
+# Install s6-overlay for service management
+ARG S6_OVERLAY_VERSION=3.1.6.2
+ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz /tmp
+ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-x86_64.tar.xz /tmp
+RUN tar -C / -Jxpf /tmp/s6-overlay-noarch.tar.xz \
+    && tar -C / -Jxpf /tmp/s6-overlay-x86_64.tar.xz \
+    && rm -f /tmp/s6-overlay*.tar.xz
 
 # Install Helix editor (architecture-aware)
 RUN ARCH=$(dpkg --print-architecture) \
@@ -57,40 +67,8 @@ RUN ARCH=$(dpkg --print-architecture) \
     && mv helix-24.07-${HELIX_ARCH}-linux/hx /usr/local/bin/ \
     && rm -rf helix-24.07-${HELIX_ARCH}-linux helix-24.07-${HELIX_ARCH}-linux.tar.xz
 
-# Install code-server
-RUN curl -fsSL https://code-server.dev/install.sh | sh
-
-# Install Tailscale
-RUN curl -fsSL https://tailscale.com/install.sh | sh
-
-# Install cloudflared (architecture-aware)
-RUN ARCH=$(dpkg --print-architecture) \
-    && curl -L --output cloudflared.deb "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${ARCH}.deb" \
-    && dpkg -i cloudflared.deb \
-    && rm cloudflared.deb
-
-# Install Caddy
-RUN apt-get update && apt-get install -y debian-keyring debian-archive-keyring apt-transport-https \
-    && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg \
-    && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list \
-    && apt-get update \
-    && apt-get install -y caddy \
-    && rm -rf /var/lib/apt/lists/*
-
 # Install mise system-wide
 RUN curl https://mise.run | sh && mv ~/.local/bin/mise /usr/local/bin/mise
-
-# Install pgweb (PostgreSQL web interface)
-RUN wget https://github.com/sosedoff/pgweb/releases/download/v0.15.0/pgweb_linux_amd64.zip \
-    && unzip pgweb_linux_amd64.zip \
-    && mv pgweb_linux_amd64 /usr/local/bin/pgweb \
-    && chmod +x /usr/local/bin/pgweb \
-    && rm pgweb_linux_amd64.zip
-
-# Install MailHog
-RUN wget https://github.com/mailhog/MailHog/releases/download/v1.0.1/MailHog_linux_amd64 \
-    && mv MailHog_linux_amd64 /usr/local/bin/mailhog \
-    && chmod +x /usr/local/bin/mailhog
 
 # Install lazygit
 RUN LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*') \
@@ -99,34 +77,8 @@ RUN LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygi
     && install lazygit /usr/local/bin \
     && rm lazygit lazygit.tar.gz
 
-# Install filebrowser (web file manager)
-RUN curl -fsSL https://raw.githubusercontent.com/filebrowser/get/master/get.sh | bash
-
-# Install Go (needed to build devbox-status)
-RUN wget https://go.dev/dl/go1.21.6.linux-amd64.tar.gz \
-    && tar -C /usr/local -xzf go1.21.6.linux-amd64.tar.gz \
-    && rm go1.21.6.linux-amd64.tar.gz
-ENV PATH="/usr/local/go/bin:${PATH}"
-
-# Install Node.js LTS (using NodeSource repository)
-RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
-    && apt-get update \
-    && apt-get install -y nodejs \
-    && rm -rf /var/lib/apt/lists/* \
-    && node --version && npm --version
-
-# Install Claude Code globally
-RUN npm install -g @anthropic-ai/claude-code
-
-# Configure SSH
-RUN mkdir -p /var/run/sshd \
-    && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config \
-    && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
-
-# Create devbox user with fixed UID/GID (will be changed at runtime)
-# Using 9999:9999 as placeholder - unlikely to conflict, entrypoint will adjust to match host user
+# Create devbox user (UID/GID 9999, will be modified at runtime)
 RUN set -e; \
-    # Handle potential GID conflict gracefully
     EXISTING_GROUP=$(getent group 9999 | cut -d: -f1 || true); \
     if [ -n "$EXISTING_GROUP" ]; then \
         echo "GID 9999 exists as '$EXISTING_GROUP', reusing it"; \
@@ -135,10 +87,8 @@ RUN set -e; \
         groupadd -g 9999 devbox; \
         GROUP_NAME="devbox"; \
     fi; \
-    # Create user with bash as default shell
-    useradd -m -u 9999 -g $GROUP_NAME -s /bin/bash devbox || \
-    (echo "UID 9999 exists, modifying existing user" && usermod -l devbox -d /home/devbox -g $GROUP_NAME -s /bin/bash $(id -un 9999)); \
-    # Add sudo privileges
+    useradd -m -u 9999 -g $GROUP_NAME -s /bin/zsh devbox || \
+    (echo "UID 9999 exists, modifying existing user" && usermod -l devbox -d /home/devbox -g $GROUP_NAME -s /bin/zsh $(id -un 9999)); \
     echo "devbox ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/devbox; \
     chmod 0440 /etc/sudoers.d/devbox
 
@@ -150,41 +100,58 @@ RUN mkdir -p /workspace \
 USER devbox
 WORKDIR /home/devbox
 
-# Configure bash with mise and starship
-RUN echo 'eval "$(/usr/local/bin/mise activate bash)"' >> /home/devbox/.bashrc \
-    && echo 'eval "$(starship init bash)"' >> /home/devbox/.bashrc
+# Copy dotfiles to /etc/dotfiles (will be copied to ~/ on first run)
+COPY dotfiles /etc/dotfiles
 
-# Note: code-server config is generated dynamically in entrypoint.sh
-
-# Switch back to root for entrypoint
+# Switch back to root for service installation
 USER root
 
-# Copy configuration files
-COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
-COPY docker/supervisord.conf /etc/supervisor/conf.d/devbox.conf
-COPY docker/Caddyfile.template /etc/caddy/Caddyfile.template
-COPY docker/Caddyfile.template /etc/caddy/Caddyfile
-RUN chmod +x /usr/local/bin/entrypoint.sh
+# Copy service scripts to /opt/services (not in PATH - these are for s6-overlay)
+COPY services /opt/services
+RUN chmod +x /opt/services/*.sh
 
-# Copy helper scripts
-COPY scripts/snapshot /usr/local/bin/snapshot
-COPY scripts/restore /usr/local/bin/restore
-COPY scripts/toggle_public /usr/local/bin/toggle_public
-RUN chmod +x /usr/local/bin/snapshot /usr/local/bin/restore /usr/local/bin/toggle_public
+# Copy helper scripts to /opt/scripts and add to PATH (user-facing tools)
+COPY scripts /opt/scripts
+RUN chmod +x /opt/scripts/*
+ENV PATH="/opt/scripts:${PATH}"
 
-# Build and install DevBox status service
-COPY devbox-status /tmp/devbox-status
-RUN cd /tmp/devbox-status \
-    && /usr/local/go/bin/go mod download \
-    && CGO_ENABLED=0 /usr/local/go/bin/go build -o /usr/local/bin/devbox-status \
-    && chmod +x /usr/local/bin/devbox-status \
-    && rm -rf /tmp/devbox-status
+# Copy devbox-status binary from builder stage
+COPY --from=builder /build/devbox-status /opt/devbox-status/devbox-status
 
-# Configure PostgreSQL
-RUN mkdir -p /var/run/postgresql && chown postgres:postgres /var/run/postgresql
+# Create state directory for persistent system data
+RUN mkdir -p /state/tailscale /state/ssh /state/postgres
+
+# Install all services - each service script handles its own install logic
+RUN for script in /opt/services/*.sh; do \
+        name=$(basename $script .sh); \
+        echo "Installing $name..."; \
+        $script install || true; \
+    done
+
+# Caddyfile is now created by caddy install script
+
+# Create s6-overlay service directories
+RUN mkdir -p /etc/s6-overlay/s6-rc.d/user/contents.d
+
+# Set up s6 services (skip 00-init and 05-secrets as they're in entrypoint)
+RUN for service in /opt/services/*.sh; do \
+        name=$(basename $service .sh); \
+        if [ "$name" = "00-init" ] || [ "$name" = "05-secrets" ]; then \
+            continue; \
+        fi; \
+        mkdir -p /etc/s6-overlay/s6-rc.d/$name; \
+        echo "longrun" > /etc/s6-overlay/s6-rc.d/$name/type; \
+        printf '#!/command/with-contenv bash\nexec %s start\n' $service > /etc/s6-overlay/s6-rc.d/$name/run; \
+        chmod +x /etc/s6-overlay/s6-rc.d/$name/run; \
+        touch /etc/s6-overlay/s6-rc.d/user/contents.d/$name; \
+    done
+
+# Copy entrypoint script
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # Expose ports (though Tailscale will handle the actual serving)
 EXPOSE 22 443 5432
 
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["sleep", "infinity"]
+# Use our entrypoint which calls /init
+ENTRYPOINT ["/entrypoint.sh"]

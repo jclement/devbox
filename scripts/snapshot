@@ -41,10 +41,6 @@ if pg_dump -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -F p -f "$SNAPSHOT_PATH"; t
     echo -e "${GREEN}✓ Snapshot created successfully${NC}"
     echo -e "${BLUE}Location: ${SNAPSHOT_PATH}${NC}"
     echo -e "${BLUE}Size:     ${SIZE}${NC}"
-
-    # List recent snapshots
-    echo -e "\n${YELLOW}Recent snapshots:${NC}"
-    ls -lht "$SNAPSHOTS_DIR" | head -6 | tail -5 | awk '{print "  " $9 " (" $5 ")"}'
 else
     echo -e "${RED}✗ Snapshot failed${NC}"
     exit 1
