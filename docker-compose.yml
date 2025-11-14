@@ -53,13 +53,20 @@ services:
       TERM: ${TERM:-xterm-256color}
       COLORTERM: truecolor
 
-      # Optional Lifecycle Hooks
-      PRE_STARTUP_CMD: ${PRE_STARTUP_CMD:-}
-      DB_SEED_FILE: ${DB_SEED_FILE:-}
+      # Optional Lifecycle Hooks (can point to custom scripts or be overridden with volumes)
+      PRE_START_HOOK: ${PRE_START_HOOK:-/opt/hooks/pre_start.sh}
+      POST_START_HOOK: ${POST_START_HOOK:-/opt/hooks/post_start.sh}
+      PRE_RESTORE_HOOK: ${PRE_RESTORE_HOOK:-/opt/hooks/pre_restore.sh}
+      POST_RESTORE_HOOK: ${POST_RESTORE_HOOK:-/opt/hooks/post_restore.sh}
+      INITIAL_SCHEMA: ${INITIAL_SCHEMA:-/opt/hooks/initial_schema.sql}
 
     volumes:
       # Workspace - bind mount for persistence
       - ./data/workspace:/workspace
+
+      # Optional: Override hook scripts by bind mounting custom scripts
+      # Example: - ./my-hooks/pre_start.sh:/opt/hooks/pre_start.sh
+      # Example: - ./my-schema.sql:/opt/hooks/initial_schema.sql
 
       # SSH directory - contains authorized_keys and any keypairs
       - ${SSH_DIR:-${HOME}/.ssh}:/home/${USERNAME:-devbox}/.ssh
@@ -73,7 +80,7 @@ services:
       - ${HOME}/.vim_runtime:/home/${USERNAME:-devbox}/.vim_runtime
 
       # Database snapshots (persist on host)
-      - ./data/snapshots:/snapshots
+      - ${SNAPSHOTS_DIR:-./data/snapshots}:/snapshots
 
       # System state (PostgreSQL, Tailscale, SSH host keys)
       - ./data/state:/state

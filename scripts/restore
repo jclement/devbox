@@ -8,41 +8,66 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+# Hook scripts (can be overridden via environment variables or bind mounts)
+PRE_RESTORE_HOOK="${PRE_RESTORE_HOOK:-/opt/hooks/pre_restore.sh}"
+POST_RESTORE_HOOK="${POST_RESTORE_HOOK:-/opt/hooks/post_restore.sh}"
+
 # Snapshots directory (mounted from host)
 SNAPSHOTS_DIR="/snapshots"
-
-# Check if snapshots directory exists
-if [ ! -d "$SNAPSHOTS_DIR" ]; then
-    echo -e "${RED}No snapshots directory found at ${SNAPSHOTS_DIR}${NC}"
-    exit 1
-fi
-
-# Check if there are any snapshots
-if [ -z "$(ls -A $SNAPSHOTS_DIR/*.sql 2>/dev/null)" ]; then
-    echo -e "${RED}No snapshots found in ${SNAPSHOTS_DIR}${NC}"
-    echo -e "${YELLOW}Create a snapshot first with: snapshot [label]${NC}"
-    exit 1
-fi
 
 # Get database connection info
 DB_NAME="${POSTGRES_DB:-devdb}"
 DB_USER="${POSTGRES_USER:-postgres}"
 DB_HOST="localhost"
 
-echo -e "${BLUE}Available snapshots:${NC}"
+# Check if a specific file path was provided as argument
+if [ -n "$1" ]; then
+    # Expand the path (handles ~, $HOME, etc.)
+    SELECTED=$(eval echo "$1")
 
-# Use fzf to select a snapshot
-SELECTED=$(ls -1t "$SNAPSHOTS_DIR"/*.sql | \
-    xargs -I {} bash -c 'echo "{} ($(du -h "{}" | cut -f1))"' | \
-    fzf --height=40% --reverse --border --prompt="Select snapshot to restore: " | \
-    sed 's/ (.*//')
+    # Check if the file exists
+    if [ ! -f "$SELECTED" ]; then
+        echo -e "${RED}Error: File not found: ${SELECTED}${NC}"
+        exit 1
+    fi
 
-if [ -z "$SELECTED" ]; then
-    echo -e "${YELLOW}No snapshot selected. Aborting.${NC}"
-    exit 0
+    # Check if it's a SQL file
+    if [[ ! "$SELECTED" =~ \.sql$ ]]; then
+        echo -e "${YELLOW}Warning: File doesn't have .sql extension: ${SELECTED}${NC}"
+    fi
+
+    SNAPSHOT_NAME=$(basename "$SELECTED")
+    echo -e "${GREEN}Using provided file: ${SNAPSHOT_NAME}${NC}"
+else
+    # Original interactive selection logic
+    # Check if snapshots directory exists
+    if [ ! -d "$SNAPSHOTS_DIR" ]; then
+        echo -e "${RED}No snapshots directory found at ${SNAPSHOTS_DIR}${NC}"
+        exit 1
+    fi
+
+    # Check if there are any snapshots
+    if [ -z "$(ls -A $SNAPSHOTS_DIR/*.sql 2>/dev/null)" ]; then
+        echo -e "${RED}No snapshots found in ${SNAPSHOTS_DIR}${NC}"
+        echo -e "${YELLOW}Create a snapshot first with: snapshot [label]${NC}"
+        exit 1
+    fi
+
+    echo -e "${BLUE}Available snapshots:${NC}"
+
+    # Use fzf to select a snapshot
+    SELECTED=$(ls -1t "$SNAPSHOTS_DIR"/*.sql | \
+        xargs -I {} bash -c 'echo "{} ($(du -h "{}" | cut -f1))"' | \
+        fzf --height=40% --reverse --border --prompt="Select snapshot to restore: " | \
+        sed 's/ (.*//')
+
+    if [ -z "$SELECTED" ]; then
+        echo -e "${YELLOW}No snapshot selected. Aborting.${NC}"
+        exit 0
+    fi
+
+    SNAPSHOT_NAME=$(basename "$SELECTED")
 fi
-
-SNAPSHOT_NAME=$(basename "$SELECTED")
 echo -e "${GREEN}Selected: ${SNAPSHOT_NAME}${NC}"
 
 # Confirmation
@@ -57,6 +82,12 @@ if [ "$CONFIRM" != "yes" ]; then
 fi
 
 echo -e "${BLUE}Starting restore process...${NC}"
+
+# Run pre-restore hook if it exists and is executable
+if [ -x "$PRE_RESTORE_HOOK" ]; then
+    echo -e "${BLUE}Running pre-restore hook...${NC}"
+    "$PRE_RESTORE_HOOK"
+fi
 
 # Drop all schemas except pg_catalog and information_schema, then recreate
 echo -e "${GREEN}1. Cleaning database...${NC}"
@@ -77,6 +108,12 @@ echo -e "${GREEN}3. Restoring from snapshot...${NC}"
 if psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -f "$SELECTED" > /dev/null 2>&1; then
     echo -e "${GREEN}✓ Database restored successfully${NC}"
     echo -e "${BLUE}Restored from: ${SNAPSHOT_NAME}${NC}"
+
+    # Run post-restore hook if it exists and is executable
+    if [ -x "$POST_RESTORE_HOOK" ]; then
+        echo -e "${BLUE}Running post-restore hook...${NC}"
+        "$POST_RESTORE_HOOK"
+    fi
 
     # Show some stats
     echo -e "\n${BLUE}Database info:${NC}"

@@ -2,6 +2,7 @@
 
 # Add ~/.local/bin to PATH
 export PATH="$HOME/.local/bin:/opt/scripts:$PATH"
+export PROJECT_ROOT="/workspace"
 
 # Terminal colors
 export TERM=xterm-256color

@@ -9,6 +9,9 @@ PGVERSION="16"
 PGCLUSTER="main"
 PGDATA="/var/lib/postgresql/$PGVERSION/$PGCLUSTER"
 
+# Initial schema file (can be overridden)
+INITIAL_SCHEMA="${INITIAL_SCHEMA:-/opt/hooks/initial_schema.sql}"
+
 case "${1:-start}" in
     install)
         echo "[postgres] Installing PostgreSQL $PGVERSION..."
@@ -78,7 +81,13 @@ EOF
             if [ "$DB_EXISTS" = "no" ]; then
                 su - postgres -c "psql -c \"CREATE DATABASE ${POSTGRES_DB:-devdb};\""
 
-                # Load seed if provided
+                # Load initial schema if it exists
+                if [ -f "$INITIAL_SCHEMA" ] && [ -s "$INITIAL_SCHEMA" ]; then
+                    echo "[postgres] Loading initial schema..."
+                    su - postgres -c "psql -d ${POSTGRES_DB:-devdb} -f $INITIAL_SCHEMA" || true
+                fi
+
+                # Legacy: Also check for DB_SEED_FILE for backwards compatibility
                 if [ -n "$DB_SEED_FILE" ] && [ -f "/workspace/$DB_SEED_FILE" ]; then
                     echo "[postgres] Loading seed file: $DB_SEED_FILE"
                     su - postgres -c "psql -d ${POSTGRES_DB:-devdb} -f /workspace/$DB_SEED_FILE" || true

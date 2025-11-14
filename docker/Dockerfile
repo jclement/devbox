@@ -116,6 +116,10 @@ COPY scripts /opt/scripts
 RUN chmod +x /opt/scripts/*
 ENV PATH="/opt/scripts:${PATH}"
 
+# Copy hook scripts to /opt/hooks (can be overridden via bind mounts)
+COPY hooks /opt/hooks
+RUN chmod +x /opt/hooks/*.sh
+
 # Copy devbox-status binary from builder stage
 COPY --from=builder /build/devbox-status /opt/devbox-status/devbox-status
 
