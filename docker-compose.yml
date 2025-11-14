@@ -59,7 +59,7 @@ services:
       - ./data/workspace:/workspace
 
       # SSH directory - contains authorized_keys and any keypairs
-      - ./ssh:/home/${USERNAME:-devbox}/.ssh
+      - ${SSH_DIR:-${HOME}/.ssh}:/home/${USERNAME:-devbox}/.ssh
 
       # Git config (read-only from host)
       - ${HOME}/.gitconfig:/home/${USERNAME:-devbox}/.gitconfig-host:ro

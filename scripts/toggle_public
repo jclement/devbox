@@ -19,7 +19,7 @@ echo -e "${BLUE}Checking Tailscale Funnel status...${NC}"
 # Get the funnel status (needs sudo)
 FUNNEL_STATUS=$(sudo tailscale serve status 2>/dev/null || echo "")
 
-if echo "$FUNNEL_STATUS" | grep -q "funnel"; then
+if echo "$FUNNEL_STATUS" | grep -q "Funnel on"; then
     # Funnel is currently ON
     echo -e "${GREEN}Funnel is currently ENABLED${NC}"
     echo -e "${YELLOW}Your dev service is publicly accessible at:${NC}"
