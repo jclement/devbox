@@ -41,6 +41,7 @@ RUN apt-get update && apt -y upgrade && apt-get install -y \
     build-essential \
     unzip \
     ripgrep \
+    magic-wormhole \
     fzf \
     socat \
     && rm -rf /var/lib/apt/lists/*
