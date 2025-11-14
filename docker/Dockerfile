@@ -133,12 +133,9 @@ RUN for script in /opt/services/*.sh; do \
 # Create s6-overlay service directories
 RUN mkdir -p /etc/s6-overlay/s6-rc.d/user/contents.d
 
-# Set up s6 services (skip 00-init and 05-secrets as they're in entrypoint)
+# Set up s6 services 
 RUN for service in /opt/services/*.sh; do \
         name=$(basename $service .sh); \
-        if [ "$name" = "00-init" ] || [ "$name" = "05-secrets" ]; then \
-            continue; \
-        fi; \
         mkdir -p /etc/s6-overlay/s6-rc.d/$name; \
         echo "longrun" > /etc/s6-overlay/s6-rc.d/$name/type; \
         printf '#!/command/with-contenv bash\nexec %s start\n' $service > /etc/s6-overlay/s6-rc.d/$name/run; \

@@ -37,6 +37,10 @@ services:
       # Service Configuration
       DEV_SERVICE_PORT: ${DEV_SERVICE_PORT:-3000}
 
+      # Code-Server Configuration
+      VSCODE_DEFAULT_EXTENSIONS: ${VSCODE_DEFAULT_EXTENSIONS:-}
+      VSCODE_DEFAULT_THEME: ${VSCODE_DEFAULT_THEME:-}
+
       # Port Configuration (for display in entrypoint messages)
       SSH_PORT: ${SSH_PORT:-2200}
       CADDY_PORT: ${CADDY_PORT:-8400}
@@ -73,6 +77,9 @@ services:
 
       # System state (PostgreSQL, Tailscale, SSH host keys)
       - ./data/state:/state
+
+      # Mount Home Directory
+      #- ./data/home:/home/${USERNAME:-devbox}
 
     # Ports only used in local mode (Tailscale mode doesn't need port mappings)
     # Uncomment these in .env to run multiple instances on same host
