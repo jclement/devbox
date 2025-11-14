@@ -11,11 +11,16 @@ NC='\033[0m'
 
 echo -e "${BLUE}DevBox Entrypoint${NC}"
 
+mkdir -p /var/run/devbox
+
 # Set variables
 TARGET_UID=${USER_UID:-1000}
 TARGET_GID=${USER_GID:-1000}
 TARGET_USERNAME=${USERNAME:-devbox}
 USER_HOME="/home/${TARGET_USERNAME}"
+
+echo "$TARGET_USERNAME" > /var/run/devbox/user
+chmod 644 /var/run/devbox/user
 
 # ============================================================================
 # COMPUTE WEBROOT URL
@@ -38,7 +43,6 @@ if [ -z "$WEBROOT" ]; then
 fi
 
 # Write WEBROOT to /var/run/devbox for system-wide access
-mkdir -p /var/run/devbox
 echo "$WEBROOT" > /var/run/devbox/webroot
 chmod 644 /var/run/devbox/webroot
 
