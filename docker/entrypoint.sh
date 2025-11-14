@@ -18,6 +18,33 @@ TARGET_USERNAME=${USERNAME:-devbox}
 USER_HOME="/home/${TARGET_USERNAME}"
 
 # ============================================================================
+# COMPUTE WEBROOT URL
+# ============================================================================
+# Determine the base URL for accessing web services
+# Can be overridden via WEBROOT environment variable (useful for Cloudflare tunnels)
+if [ -z "$WEBROOT" ]; then
+    if [ -n "$TS_AUTHKEY" ]; then
+        # Tailscale mode - use HTTPS
+        TS_HOSTNAME_VALUE="${TS_HOSTNAME:-${CONTAINER_NAME}}"
+        if [ -n "$TS_SUFFIX" ]; then
+            WEBROOT="https://${TS_HOSTNAME_VALUE}.${TS_SUFFIX}"
+        else
+            WEBROOT="https://${TS_HOSTNAME_VALUE}"
+        fi
+    else
+        # Local mode - use HTTP with Caddy port
+        WEBROOT="http://localhost:${CADDY_PORT}"
+    fi
+fi
+
+# Write WEBROOT to /var/run/devbox for system-wide access
+mkdir -p /var/run/devbox
+echo "$WEBROOT" > /var/run/devbox/webroot
+chmod 644 /var/run/devbox/webroot
+
+echo -e "${GREEN}WEBROOT: ${WEBROOT}${NC}"
+
+# ============================================================================
 # SECRETS - Write to /etc/secrets and remove from environment
 # ============================================================================
 echo -e "${BLUE}Setting up secrets...${NC}"

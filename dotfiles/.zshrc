@@ -8,6 +8,11 @@ export PROJECT_ROOT="/workspace"
 export TERM=xterm-256color
 export COLORTERM=truecolor
 
+# Webroot URL (computed at container startup)
+if [ -f /var/run/devbox/webroot ]; then
+    export WEBROOT=$(cat /var/run/devbox/webroot)
+fi
+
 # PostgreSQL defaults
 export PGHOST=localhost
 export PGUSER=postgres

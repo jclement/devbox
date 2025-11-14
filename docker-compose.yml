@@ -34,6 +34,9 @@ services:
       # Cloudflare Tunnel Configuration (optional)
       CF_TUNNEL_TOKEN: ${CF_TUNNEL_TOKEN:-}
 
+      # Webroot URL override (optional - auto-computed if not set)
+      WEBROOT: ${WEBROOT:-}
+
       # Service Configuration
       DEV_SERVICE_PORT: ${DEV_SERVICE_PORT:-3000}
 
