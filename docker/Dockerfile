@@ -133,7 +133,8 @@ RUN for script in /opt/services/*.sh; do \
 # Create s6-overlay service directories
 RUN mkdir -p /etc/s6-overlay/s6-rc.d/user/contents.d
 
-# Set up s6 services 
+# Set up s6 services (all services in /opt/services/ are auto-configured)
+# Initialization and secrets are handled in entrypoint.sh before s6 starts
 RUN for service in /opt/services/*.sh; do \
         name=$(basename $service .sh); \
         mkdir -p /etc/s6-overlay/s6-rc.d/$name; \

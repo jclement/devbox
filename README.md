@@ -158,7 +158,41 @@ POSTGRES_PASSWORD=postgres
 
 # Your Dev Service
 DEV_SERVICE_PORT=3000      # Port your app listens on
+
+# VS Code (code-server) Configuration
+VSCODE_DEFAULT_EXTENSIONS=vscodevim.vim;Anthropic.claude-code;github.copilot
+VSCODE_DEFAULT_THEME=Default Dark+
 ```
+
+### VS Code (code-server) Customization
+
+On first startup, code-server automatically installs configured extensions and applies theme settings. This only happens once - subsequent starts preserve your customizations.
+
+**Customize extensions:**
+```bash
+# In .env
+VSCODE_DEFAULT_EXTENSIONS=vscodevim.vim;ms-python.python;dbaeumer.vscode-eslint
+
+# Or disable automatic installation
+VSCODE_DEFAULT_EXTENSIONS=
+```
+
+**Customize theme:**
+```bash
+# In .env
+VSCODE_DEFAULT_THEME=Default Dark+         # Dark theme (default)
+VSCODE_DEFAULT_THEME=Default Light+        # Light theme
+VSCODE_DEFAULT_THEME=Monokai              # Other installed theme
+```
+
+**How it works:**
+- Extensions and theme are configured on first run only
+- Settings persist in `./data/home/.local/share/code-server/` (if home directory is mounted)
+- Manual changes via VS Code UI are preserved
+- Delete the `.configured` marker file to reset configuration
+
+**Finding extension IDs:**
+Visit https://open-vsx.org/ and search for extensions. The ID format is `publisher.extension-name`.
 
 ## Exposing Services Publicly
 

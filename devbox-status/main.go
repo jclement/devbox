@@ -19,14 +19,15 @@ import (
 )
 
 type StatusData struct {
-	ContainerName   string
-	Username        string
-	PostgresDB      string
-	DevServicePort  string
-	Hostname        string
-	Services        []Service
-	Snapshots       []Snapshot
-	TailscaleStatus *TailscaleStatus
+	ContainerName     string
+	Username          string
+	PostgresDB        string
+	DevServicePort    string
+	Hostname          string
+	Services          []Service
+	Snapshots         []Snapshot
+	TailscaleStatus   *TailscaleStatus
+	CloudflaredActive bool
 }
 
 type Service struct {
@@ -537,6 +538,19 @@ func handleStatus(w http.ResponseWriter, r *http.Request) {
         {{end}}
         {{end}}
 
+        {{if .CloudflaredActive}}
+        <div class="card">
+            <h2>🌐 Cloudflare Tunnel</h2>
+            <div class="service">
+                <div>
+                    <div class="service-name">Tunnel Status</div>
+                    <div style="font-size: 12px; opacity: 0.9;">🌍 Active - traffic routed through Cloudflare</div>
+                </div>
+                <span class="status-badge status-running">active</span>
+            </div>
+        </div>
+        {{end}}
+
         <div class="grid">
             <div class="card">
                 <h2>Services</h2>
@@ -954,20 +968,28 @@ func getStatus() *StatusData {
 	hostname, _ := os.Hostname()
 
 	status := &StatusData{
-		ContainerName:   getEnv("CONTAINER_NAME", "devbox"),
-		Username:        getEnv("USERNAME", "devbox"),
-		PostgresDB:      getEnv("POSTGRES_DB", "devdb"),
-		DevServicePort:  getEnv("DEV_SERVICE_PORT", "3000"),
-		Hostname:        hostname,
-		Services:        getServices(),
-		Snapshots:       getSnapshots(),
-		TailscaleStatus: getTailscaleStatus(),
+		ContainerName:     getEnv("CONTAINER_NAME", "devbox"),
+		Username:          getEnv("USERNAME", "devbox"),
+		PostgresDB:        getEnv("POSTGRES_DB", "devdb"),
+		DevServicePort:    getEnv("DEV_SERVICE_PORT", "3000"),
+		Hostname:          hostname,
+		Services:          getServices(),
+		Snapshots:         getSnapshots(),
+		TailscaleStatus:   getTailscaleStatus(),
+		CloudflaredActive: isCloudflaredActive(),
 	}
 
 	cachedStatus = status
 	cacheTime = time.Now()
 
 	return status
+}
+
+func isCloudflaredActive() bool {
+	// Check if cloudflared process is running
+	cmd := exec.Command("pgrep", "-x", "cloudflared")
+	err := cmd.Run()
+	return err == nil
 }
 
 func getTailscaleStatus() *TailscaleStatus {
