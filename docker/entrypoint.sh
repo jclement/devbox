@@ -130,11 +130,12 @@ fi
 # Ensure workspace/snapshots ownership
 chown ${TARGET_USERNAME}:${TARGET_USERNAME} /workspace /snapshots 2>/dev/null || true
 
-# Run pre-startup command
-if [ -n "$PRE_STARTUP_CMD" ]; then
-    echo -e "${GREEN}Running pre-startup command${NC}"
-    cd /workspace
-    su - ${TARGET_USERNAME} -c "cd /workspace && $PRE_STARTUP_CMD" || true
+
+# Run pre-start hook if it exists and is executable
+PRE_START_HOOK="${PRE_START_HOOK:-/opt/hooks/pre_start.sh}"
+if [ -x "$PRE_START_HOOK" ]; then
+    echo -e "${GREEN}Running pre-start hook${NC}"
+    "$PRE_START_HOOK" || true
 fi
 
 echo -e "${GREEN}Entrypoint complete, starting s6-overlay${NC}"

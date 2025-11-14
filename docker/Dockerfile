@@ -143,9 +143,16 @@ RUN mkdir -p /etc/s6-overlay/s6-rc.d/user/contents.d
 RUN for service in /opt/services/*.sh; do \
         name=$(basename $service .sh); \
         mkdir -p /etc/s6-overlay/s6-rc.d/$name; \
-        echo "longrun" > /etc/s6-overlay/s6-rc.d/$name/type; \
-        printf '#!/command/with-contenv bash\nexec %s start\n' $service > /etc/s6-overlay/s6-rc.d/$name/run; \
-        chmod +x /etc/s6-overlay/s6-rc.d/$name/run; \
+        # post-start is a oneshot service, all others are longrun
+        if [ "$name" = "99-post-start" ]; then \
+            echo "oneshot" > /etc/s6-overlay/s6-rc.d/$name/type; \
+            printf '#!/command/with-contenv bash\n%s start\n' $service > /etc/s6-overlay/s6-rc.d/$name/up; \
+            chmod +x /etc/s6-overlay/s6-rc.d/$name/up; \
+        else \
+            echo "longrun" > /etc/s6-overlay/s6-rc.d/$name/type; \
+            printf '#!/command/with-contenv bash\nexec %s start\n' $service > /etc/s6-overlay/s6-rc.d/$name/run; \
+            chmod +x /etc/s6-overlay/s6-rc.d/$name/run; \
+        fi; \
         touch /etc/s6-overlay/s6-rc.d/user/contents.d/$name; \
     done
 
