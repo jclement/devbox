@@ -20,7 +20,10 @@ TARGET_USERNAME=${USERNAME:-devbox}
 USER_HOME="/home/${TARGET_USERNAME}"
 
 echo "$TARGET_USERNAME" > /var/run/devbox/user
-chmod 644 /var/run/devbox/user
+echo "$TARGET_UID" > /var/run/devbox/uid
+echo "$TARGET_GID" > /var/run/devbox/gid
+echo "$USER_HOME" > /var/run/devbox/home
+chmod 644 /var/run/devbox/*
 
 # ============================================================================
 # COMPUTE WEBROOT URL
