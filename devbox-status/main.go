@@ -24,7 +24,6 @@ type StatusData struct {
 	PostgresDB      string
 	DevServicePort  string
 	Hostname        string
-	Uptime          string
 	Services        []Service
 	Snapshots       []Snapshot
 	TailscaleStatus *TailscaleStatus
@@ -103,90 +102,109 @@ func handleStatus(w http.ResponseWriter, r *http.Request) {
     <title>DevBox - {{.ContainerName}}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap');
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'IBM Plex Mono', 'Courier New', monospace;
+            background: #000080;
+            background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
             min-height: 100vh;
             padding: 20px;
+            color: #00ffff;
         }
         .container {
             max-width: 1400px;
             margin: 0 auto;
         }
         .header {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            background: #0000aa;
+            padding: 20px;
+            border: 3px double #00ffff;
+            box-shadow: 4px 4px 0 #000040;
             margin-bottom: 20px;
         }
         h1 {
-            color: #333;
+            color: #ffff00;
             margin-bottom: 10px;
-            font-size: 32px;
+            font-size: 28px;
+            font-weight: 700;
+            text-shadow: 2px 2px 0 #000000;
+            letter-spacing: 2px;
         }
         .subtitle {
-            color: #666;
-            font-size: 16px;
+            color: #00ffff;
+            font-size: 13px;
+            font-weight: 400;
         }
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 20px;
-            margin-top: 30px;
+            margin-top: 20px;
             margin-bottom: 20px;
         }
         .card {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            background: #0000aa;
+            padding: 20px;
+            border: 3px double #00ffff;
+            box-shadow: 4px 4px 0 #000040;
         }
         .card h2 {
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 20px;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 10px;
+            color: #ffff00;
+            margin-bottom: 15px;
+            font-size: 16px;
+            font-weight: 700;
+            border-bottom: 2px solid #00ffff;
+            padding-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         .service {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid #eee;
+            padding: 10px 0;
+            border-bottom: 1px solid #0000ff;
         }
         .service:last-child { border-bottom: none; }
         .service-name {
             font-weight: 600;
-            color: #333;
+            color: #ffffff;
+            font-size: 13px;
         }
         .status-badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
+            padding: 2px 10px;
+            font-size: 11px;
+            font-weight: 700;
+            border: 2px solid;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         .status-running {
-            background: #10b981;
-            color: white;
+            background: #00aa00;
+            color: #00ff00;
+            border-color: #00ff00;
         }
         .status-stopped {
-            background: #ef4444;
-            color: white;
+            background: #aa0000;
+            color: #ff0000;
+            border-color: #ff0000;
         }
         .service a {
-            color: #667eea;
+            color: #00ffff;
             text-decoration: none;
-            font-size: 14px;
+            font-size: 12px;
         }
-        .service a:hover { text-decoration: underline; }
+        .service a:hover {
+            text-decoration: underline;
+            color: #ffff00;
+        }
         .snapshot-item {
-            padding: 12px;
-            background: #f9fafb;
-            border-radius: 8px;
-            margin-bottom: 10px;
+            padding: 10px;
+            background: #000080;
+            border: 1px solid #0000ff;
+            margin-bottom: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -196,92 +214,288 @@ func handleStatus(w http.ResponseWriter, r *http.Request) {
         }
         .snapshot-name {
             font-weight: 600;
-            color: #333;
+            color: #ffff00;
             margin-bottom: 4px;
+            font-size: 12px;
         }
         .snapshot-meta {
-            font-size: 12px;
-            color: #666;
+            font-size: 11px;
+            color: #00ffff;
         }
         .snapshot-actions {
             display: flex;
-            gap: 8px;
+            gap: 6px;
         }
         .btn {
-            padding: 6px 14px;
-            border: none;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 500;
+            padding: 6px 12px;
+            border: 2px solid;
+            font-size: 11px;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.1s;
+            font-family: 'IBM Plex Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .btn:hover {
+            transform: translate(2px, 2px);
+            box-shadow: none;
+        }
+        .btn:active {
+            transform: translate(4px, 4px);
         }
         .btn-restore {
-            background: #667eea;
-            color: white;
+            background: #0000aa;
+            color: #00ffff;
+            border-color: #00ffff;
+            box-shadow: 2px 2px 0 #000040;
         }
-        .btn-restore:hover { background: #5568d3; }
         .btn-delete {
-            background: #ef4444;
-            color: white;
+            background: #aa0000;
+            color: #ff0000;
+            border-color: #ff0000;
+            box-shadow: 2px 2px 0 #550000;
         }
-        .btn-delete:hover { background: #dc2626; }
         .btn-create {
-            background: #10b981;
-            color: white;
+            background: #00aa00;
+            color: #00ff00;
+            border-color: #00ff00;
+            box-shadow: 2px 2px 0 #005500;
             width: 100%;
-            padding: 12px;
-            font-size: 15px;
+            padding: 10px;
+            font-size: 13px;
         }
-        .btn-create:hover { background: #059669; }
         .input-group {
             margin-bottom: 15px;
         }
         .input-group input {
             width: 100%;
-            padding: 10px;
-            border: 2px solid #e5e7eb;
-            border-radius: 6px;
-            font-size: 14px;
+            padding: 8px;
+            border: 2px solid #00ffff;
+            background: #000080;
+            color: #ffff00;
+            font-size: 13px;
+            font-family: 'IBM Plex Mono', monospace;
         }
         .input-group input:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #ffff00;
+            background: #0000aa;
+        }
+        .input-group input::placeholder {
+            color: #0000ff;
         }
         .empty-state {
             text-align: center;
-            padding: 40px 20px;
-            color: #666;
+            padding: 30px 20px;
+            color: #0000ff;
+            font-style: italic;
         }
         .tailscale-card {
             grid-column: 1 / -1;
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            color: white;
+            background: #aa00aa;
+            border-color: #ff00ff;
         }
         .tailscale-card h2 {
-            color: white;
-            border-bottom-color: rgba(255,255,255,0.3);
+            color: #ffff00;
+            border-bottom-color: #ff00ff;
+        }
+        .tailscale-card .service {
+            border-bottom-color: #880088;
         }
         .tailscale-card .service-name {
-            color: white;
+            color: #ffffff;
         }
         .tailscale-card .service a {
-            color: #c7d2fe;
+            color: #ff00ff;
         }
         .funnel-warning {
-            background: rgba(255,255,255,0.1);
-            padding: 12px;
-            border-radius: 6px;
+            background: #880088;
+            padding: 10px;
+            border: 2px solid #ff00ff;
             margin-top: 12px;
+            font-size: 12px;
+            color: #ffff00;
+        }
+        /* Toast Notification System */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 400px;
+        }
+        .toast {
+            background: #0000aa;
+            border: 3px double #00ffff;
+            box-shadow: 6px 6px 0 #000040;
+            padding: 15px 20px;
+            color: #ffffff;
             font-size: 13px;
+            animation: slideIn 0.3s ease-out;
+            position: relative;
+            min-width: 300px;
+        }
+        .toast.success {
+            border-color: #00ff00;
+        }
+        .toast.error {
+            border-color: #ff0000;
+            background: #aa0000;
+        }
+        .toast.warning {
+            border-color: #ffff00;
+        }
+        .toast-title {
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: #ffff00;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 12px;
+        }
+        .toast-message {
+            color: #00ffff;
+            line-height: 1.4;
+        }
+        .toast.success .toast-message {
+            color: #00ff00;
+        }
+        .toast.error .toast-message {
+            color: #ffffff;
+        }
+        .toast-close {
+            position: absolute;
+            top: 5px;
+            right: 8px;
+            background: none;
+            border: none;
+            color: #00ffff;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 700;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            line-height: 1;
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+        .toast.removing {
+            animation: slideOut 0.3s ease-in forwards;
+        }
+        /* Modal Dialog System */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 128, 0.8);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal {
+            background: #0000aa;
+            border: 3px double #ffff00;
+            box-shadow: 8px 8px 0 #000040;
+            padding: 20px;
+            min-width: 400px;
+            max-width: 600px;
+        }
+        .modal-title {
+            color: #ffff00;
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #ffff00;
+            padding-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .modal-message {
+            color: #00ffff;
+            margin-bottom: 20px;
+            line-height: 1.6;
+            font-size: 13px;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .modal-btn {
+            padding: 8px 20px;
+            border: 2px solid;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'IBM Plex Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 2px 2px 0 #000040;
+        }
+        .modal-btn:hover {
+            transform: translate(1px, 1px);
+        }
+        .modal-btn-yes {
+            background: #00aa00;
+            color: #00ff00;
+            border-color: #00ff00;
+        }
+        .modal-btn-no {
+            background: #aa0000;
+            color: #ff0000;
+            border-color: #ff0000;
         }
     </style>
 </head>
 <body>
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Modal Overlay -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-title" id="modalTitle"></div>
+            <div class="modal-message" id="modalMessage"></div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-yes" id="modalYes">YES</button>
+                <button class="modal-btn modal-btn-no" id="modalNo">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <div class="header">
-            <h1>🚀 {{.ContainerName}}</h1>
-            <p class="subtitle">User: {{.Username}} | Database: {{.PostgresDB}} | Uptime: {{.Uptime}}</p>
+            <h1>DEVBOX STATUS &middot; {{.ContainerName}}</h1>
+            <p class="subtitle">User: {{.Username}} | Database: {{.PostgresDB}} </p>
         </div>
 
         {{if .TailscaleStatus}}
@@ -368,24 +582,97 @@ func handleStatus(w http.ResponseWriter, r *http.Request) {
     <script>
         const basePath = '/devbox';
 
-        function toggleFunnel(currentlyEnabled) {
+        // Toast Notification System
+        function showToast(title, message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'toast-close';
+            closeBtn.innerHTML = '&times;';
+            closeBtn.onclick = function() { toast.remove(); };
+
+            const titleEl = document.createElement('div');
+            titleEl.className = 'toast-title';
+            titleEl.textContent = title;
+
+            const messageEl = document.createElement('div');
+            messageEl.className = 'toast-message';
+            messageEl.textContent = message;
+
+            toast.appendChild(closeBtn);
+            toast.appendChild(titleEl);
+            toast.appendChild(messageEl);
+
+            container.appendChild(toast);
+
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                toast.classList.add('removing');
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+
+        // Modal Dialog System
+        function showConfirm(title, message) {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('modalOverlay');
+                const titleEl = document.getElementById('modalTitle');
+                const messageEl = document.getElementById('modalMessage');
+                const yesBtn = document.getElementById('modalYes');
+                const noBtn = document.getElementById('modalNo');
+
+                titleEl.textContent = title;
+                messageEl.innerHTML = message.replace(/\n/g, '<br>');
+                overlay.classList.add('active');
+
+                const handleYes = () => {
+                    overlay.classList.remove('active');
+                    yesBtn.removeEventListener('click', handleYes);
+                    noBtn.removeEventListener('click', handleNo);
+                    resolve(true);
+                };
+
+                const handleNo = () => {
+                    overlay.classList.remove('active');
+                    yesBtn.removeEventListener('click', handleYes);
+                    noBtn.removeEventListener('click', handleNo);
+                    resolve(false);
+                };
+
+                yesBtn.addEventListener('click', handleYes);
+                noBtn.addEventListener('click', handleNo);
+
+                // Close on overlay click
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) {
+                        handleNo();
+                    }
+                });
+            });
+        }
+
+        async function toggleFunnel(currentlyEnabled) {
             if (!currentlyEnabled) {
-                if (!confirm('⚠️ WARNING: This will make your dev service publicly accessible on the internet!\n\nAnyone with the URL can access it.\nOnly your main app (/) will be exposed.\nAdmin tools (/code/, /db/, /mail/, /files/) remain private.\n\nAre you sure?')) {
-                    return;
-                }
+                const confirmed = await showConfirm(
+                    '⚠️ WARNING: PUBLIC ACCESS',
+                    'This will make your dev service publicly accessible on the internet!\n\nAnyone with the URL can access it.\nOnly your main app (/) will be exposed.\nAdmin tools (/code/, /db/, /mail/, /files/) remain private.\n\nAre you sure?'
+                );
+                if (!confirmed) return;
             }
 
             fetch(basePath + '/api/tailscale/toggle-funnel', { method: 'POST' })
                 .then(r => r.json())
                 .then(data => {
                     if (data.success) {
-                        alert(data.message);
-                        location.reload();
+                        showToast('SUCCESS', data.message, 'success');
+                        setTimeout(() => location.reload(), 1500);
                     } else {
-                        alert('Error: ' + data.error);
+                        showToast('ERROR', data.error, 'error');
                     }
                 })
-                .catch(err => alert('Error: ' + err));
+                .catch(err => showToast('ERROR', String(err), 'error'));
         }
 
         function createSnapshot() {
@@ -394,37 +681,48 @@ func handleStatus(w http.ResponseWriter, r *http.Request) {
                 .then(r => r.json())
                 .then(data => {
                     if (data.success) {
-                        alert('Snapshot created: ' + data.filename);
-                        location.reload();
+                        showToast('SNAPSHOT CREATED', 'Snapshot saved: ' + data.filename, 'success');
+                        setTimeout(() => location.reload(), 1500);
                     } else {
-                        alert('Error: ' + data.error);
+                        showToast('ERROR', data.error, 'error');
                     }
                 });
         }
 
-        function restoreSnapshot(filename) {
-            if (!confirm('Restore from ' + filename + '? This will drop all current data!')) return;
+        async function restoreSnapshot(filename) {
+            const confirmed = await showConfirm(
+                '⚠️ RESTORE DATABASE',
+                'Restore from ' + filename + '?\n\nThis will DROP ALL current data!\n\nThis action cannot be undone.'
+            );
+            if (!confirmed) return;
+
             fetch(basePath + '/api/snapshots/restore?filename=' + encodeURIComponent(filename), { method: 'POST' })
                 .then(r => r.json())
                 .then(data => {
                     if (data.success) {
-                        alert('Database restored successfully');
-                        location.reload();
+                        showToast('DATABASE RESTORED', 'Successfully restored from snapshot', 'success');
+                        setTimeout(() => location.reload(), 1500);
                     } else {
-                        alert('Error: ' + data.error);
+                        showToast('ERROR', data.error, 'error');
                     }
                 });
         }
 
-        function deleteSnapshot(filename) {
-            if (!confirm('Delete ' + filename + '?')) return;
+        async function deleteSnapshot(filename) {
+            const confirmed = await showConfirm(
+                'DELETE SNAPSHOT',
+                'Delete ' + filename + '?\n\nThis action cannot be undone.'
+            );
+            if (!confirmed) return;
+
             fetch(basePath + '/api/snapshots/delete?filename=' + encodeURIComponent(filename), { method: 'POST' })
                 .then(r => r.json())
                 .then(data => {
                     if (data.success) {
-                        location.reload();
+                        showToast('DELETED', 'Snapshot deleted successfully', 'success');
+                        setTimeout(() => location.reload(), 1500);
                     } else {
-                        alert('Error: ' + data.error);
+                        showToast('ERROR', data.error, 'error');
                     }
                 });
         }
@@ -600,8 +898,8 @@ func handleToggleFunnel(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if Tailscale is enabled
-	tsAuthKey := os.Getenv("TS_AUTHKEY")
-	if tsAuthKey == "" {
+	checkCmd := exec.Command("tailscale", "status")
+	if err := checkCmd.Run(); err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"success": false,
@@ -661,7 +959,6 @@ func getStatus() *StatusData {
 		PostgresDB:      getEnv("POSTGRES_DB", "devdb"),
 		DevServicePort:  getEnv("DEV_SERVICE_PORT", "3000"),
 		Hostname:        hostname,
-		Uptime:          getUptime(),
 		Services:        getServices(),
 		Snapshots:       getSnapshots(),
 		TailscaleStatus: getTailscaleStatus(),
@@ -674,11 +971,6 @@ func getStatus() *StatusData {
 }
 
 func getTailscaleStatus() *TailscaleStatus {
-	tsAuthKey := os.Getenv("TS_AUTHKEY")
-	if tsAuthKey == "" {
-		return nil
-	}
-
 	// Get Tailscale status
 	cmd := exec.Command("tailscale", "status", "--json")
 	output, err := cmd.Output()
@@ -754,28 +1046,6 @@ func checkService(port int) string {
 	}
 	conn.Close()
 	return "running"
-}
-
-func getUptime() string {
-	data, err := os.ReadFile("/proc/uptime")
-	if err != nil {
-		return "unknown"
-	}
-
-	var seconds float64
-	fmt.Sscanf(string(data), "%f", &seconds)
-
-	duration := time.Duration(seconds) * time.Second
-	days := int(duration.Hours() / 24)
-	hours := int(duration.Hours()) % 24
-	minutes := int(duration.Minutes()) % 60
-
-	if days > 0 {
-		return fmt.Sprintf("%dd %dh %dm", days, hours, minutes)
-	} else if hours > 0 {
-		return fmt.Sprintf("%dh %dm", hours, minutes)
-	}
-	return fmt.Sprintf("%dm", minutes)
 }
 
 func getSnapshots() []Snapshot {

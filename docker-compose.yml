@@ -52,7 +52,6 @@ services:
       # Optional Lifecycle Hooks
       PRE_STARTUP_CMD: ${PRE_STARTUP_CMD:-}
       DB_SEED_FILE: ${DB_SEED_FILE:-}
-      POST_STARTUP_CMD: ${POST_STARTUP_CMD:-}
 
     volumes:
       # Workspace - bind mount for persistence

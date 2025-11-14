@@ -465,9 +465,6 @@ PRE_STARTUP_CMD="cp .env.example .env"
 
 # Load SQL file on first database creation
 DB_SEED_FILE="database/seed.sql"
-
-# Run after services are ready (e.g., install dependencies)
-POST_STARTUP_CMD="npm install && npm run dev"
 ```
 
 ## SSH Configuration
