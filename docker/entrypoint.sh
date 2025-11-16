@@ -13,6 +13,19 @@ echo -e "${BLUE}DevBox Entrypoint${NC}"
 
 mkdir -p /var/run/devbox
 
+# Set timezone
+TZ="${TZ:-UTC}"
+if [ -f "/usr/share/zoneinfo/$TZ" ]; then
+    ln -sf /usr/share/zoneinfo/$TZ /etc/localtime
+    echo "$TZ" > /etc/timezone
+    echo -e "${GREEN}Timezone set to: ${TZ}${NC}"
+else
+    echo -e "${YELLOW}Warning: Invalid timezone '$TZ', using UTC${NC}"
+    ln -sf /usr/share/zoneinfo/UTC /etc/localtime
+    echo "UTC" > /etc/timezone
+    TZ="UTC"
+fi
+
 # Set variables
 TARGET_UID=${USER_UID:-1000}
 TARGET_GID=${USER_GID:-1000}

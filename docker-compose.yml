@@ -15,6 +15,9 @@ services:
       - /dev/net/tun:/dev/net/tun
 
     environment:
+      # System Configuration
+      TZ: ${TZ:-UTC}
+
       # User Configuration (matches host user)
       USER_UID: ${USER_UID:-1000}
       USER_GID: ${USER_GID:-1000}
