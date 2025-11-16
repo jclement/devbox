@@ -177,6 +177,14 @@ fi
 # Ensure workspace/snapshots ownership
 chown ${TARGET_USERNAME}:${TARGET_USERNAME} /workspace /snapshots 2>/dev/null || true
 
+# Install additional APT packages if specified
+if [ -n "$APT_PACKAGES" ]; then
+    echo -e "${GREEN}Installing additional APT packages: ${APT_PACKAGES}${NC}"
+    apt-get update > /dev/null 2>&1
+    apt-get install -y $APT_PACKAGES || echo -e "${YELLOW}Warning: Failed to install some packages${NC}"
+    rm -rf /var/lib/apt/lists/*
+fi
+
 # Install mise global tools if specified
 if [ -n "$MISE_GLOBAL_TOOLS" ]; then
     echo -e "${GREEN}Installing mise global tools: ${MISE_GLOBAL_TOOLS}${NC}"
