@@ -42,6 +42,7 @@ services:
 
       # Service Configuration
       DEV_SERVICE_PORT: ${DEV_SERVICE_PORT:-3000}
+      MISE_GLOBAL_TOOLS: ${MISE_GLOBAL_TOOLS:-}
 
       # Code-Server Configuration
       VSCODE_DEFAULT_EXTENSIONS: ${VSCODE_DEFAULT_EXTENSIONS:-}

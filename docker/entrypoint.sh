@@ -177,6 +177,14 @@ fi
 # Ensure workspace/snapshots ownership
 chown ${TARGET_USERNAME}:${TARGET_USERNAME} /workspace /snapshots 2>/dev/null || true
 
+# Install mise global tools if specified
+if [ -n "$MISE_GLOBAL_TOOLS" ]; then
+    echo -e "${GREEN}Installing mise global tools: ${MISE_GLOBAL_TOOLS}${NC}"
+    for tool in $MISE_GLOBAL_TOOLS; do
+        echo -e "${BLUE}Installing ${tool}...${NC}"
+        su - ${TARGET_USERNAME} -c "mise use -g ${tool}" || echo -e "${YELLOW}Warning: Failed to install ${tool}${NC}"
+    done
+fi
 
 # Run pre-start hook if it exists and is executable
 PRE_START_HOOK="${PRE_START_HOOK:-/opt/hooks/pre_start.sh}"
