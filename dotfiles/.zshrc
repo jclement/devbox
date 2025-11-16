@@ -46,6 +46,7 @@ alias ...='cd ../..'
 alias ....='cd ../../..'
 alias grep='grep --color=auto'
 alias psql='psql -h localhost -U postgres'  # Use local postgres by default
+alias redis-cli='valkey-cli'  # Valkey CLI (Redis-compatible)
 
 # Install starship if not already installed
 if ! command -v starship &> /dev/null; then
