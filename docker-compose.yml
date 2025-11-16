@@ -84,11 +84,6 @@ services:
       # Git config (read-only from host)
       - ${HOME}/.gitconfig:/home/${USERNAME:-devbox}/.gitconfig-host:ro
 
-      # Vim configuration (optional)
-      - ${HOME}/.vimrc:/home/${USERNAME:-devbox}/.vimrc
-      - ${HOME}/.vim:/home/${USERNAME:-devbox}/.vim
-      - ${HOME}/.vim_runtime:/home/${USERNAME:-devbox}/.vim_runtime
-
       # Database snapshots (persist on host)
       - ${SNAPSHOTS_DIR:-./data/snapshots}:/snapshots
 

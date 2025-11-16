@@ -28,6 +28,11 @@ case "${1:-start}" in
     start)
         echo "[valkey] Starting Valkey..."
 
+        # Create valkey user if it doesn't exist
+        if ! id valkey >/dev/null 2>&1; then
+            useradd -r -s /bin/false -d /var/lib/valkey valkey
+        fi
+
         # Configure Valkey to bind to localhost only (Tailscale forwards if needed)
         mkdir -p /etc/valkey
         cat > /etc/valkey/valkey.conf <<EOF
