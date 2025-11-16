@@ -45,6 +45,8 @@ RUN apt-get update && apt -y upgrade && apt-get install -y \
     magic-wormhole \
     fzf \
     socat \
+    sqlite3 \
+    libsqlite3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install s6-overlay for service management
