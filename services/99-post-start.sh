@@ -17,7 +17,8 @@ case "${1:-start}" in
         POST_START_HOOK="${POST_START_HOOK:-/opt/hooks/post_start.sh}"
         if [ -x "$POST_START_HOOK" ]; then
             echo "[post-start] Running post-start hook..."
-            "$POST_START_HOOK" || true
+            # Use with-contenv to ensure environment variables are available
+            /command/with-contenv bash -c "$POST_START_HOOK" || true
         else
             echo "[post-start] No executable post-start hook found at $POST_START_HOOK"
         fi
