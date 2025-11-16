@@ -52,6 +52,10 @@ case "${1:-start}" in
         reverse_proxy localhost:8081
     }
 
+    handle_path ${SERVICE_ROOT}valkey/* {
+        reverse_proxy localhost:8084
+    }
+
     handle_path ${SERVICE_ROOT}mail/* {
         reverse_proxy localhost:8025
     }
@@ -87,6 +91,10 @@ EOF
 
     handle_path ${SERVICE_ROOT}db/* {
         reverse_proxy localhost:8081
+    }
+
+    handle_path ${SERVICE_ROOT}valkey/* {
+        reverse_proxy localhost:8084
     }
 
     handle_path ${SERVICE_ROOT}mail/* {

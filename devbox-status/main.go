@@ -1039,14 +1039,17 @@ func getTailscaleStatus() *TailscaleStatus {
 }
 
 func getServices() []Service {
+	serviceRoot := getServiceRoot()
 	services := []Service{
 		{Name: "SSH", Status: checkService(22), URL: ""},
 		{Name: "PostgreSQL", Status: checkService(5432), URL: ""},
+		{Name: "Valkey", Status: checkService(6379), URL: ""},
 		{Name: "Caddy", Status: checkService(8443), URL: "/"},
-		{Name: "code-server", Status: checkService(8080), URL: "/devbox/code/"},
-		{Name: "pgweb", Status: checkService(8081), URL: "/devbox/db/"},
-		{Name: "MailHog", Status: checkService(8025), URL: "/devbox/mail/"},
-		{Name: "File Browser", Status: checkService(8083), URL: "/devbox/files/"},
+		{Name: "code-server", Status: checkService(8080), URL: serviceRoot + "code/"},
+		{Name: "pgweb", Status: checkService(8081), URL: serviceRoot + "db/"},
+		{Name: "Redis Commander", Status: checkService(8084), URL: serviceRoot + "valkey/"},
+		{Name: "MailHog", Status: checkService(8025), URL: serviceRoot + "mail/"},
+		{Name: "File Browser", Status: checkService(8083), URL: serviceRoot + "files/"},
 	}
 
 	devPort := getEnv("DEV_SERVICE_PORT", "3000")
@@ -1119,6 +1122,15 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+func getServiceRoot() string {
+	root := getEnv("SERVICE_ROOT", "/devbox/")
+	// Ensure it ends with /
+	if !strings.HasSuffix(root, "/") {
+		root = root + "/"
+	}
+	return root
 }
 
 func parseInt(s string) int {
