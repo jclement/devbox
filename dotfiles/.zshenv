@@ -9,10 +9,26 @@ if [ -f /var/run/devbox/webroot ]; then
     export WEBROOT=$(cat /var/run/devbox/webroot)
 fi
 
-# PostgreSQL defaults
+# Mise environment (read from runtime config)
+if [ -f /var/run/devbox/mise_env ]; then
+    MISE_ENV_VALUE=$(cat /var/run/devbox/mise_env)
+    if [ -n "$MISE_ENV_VALUE" ]; then
+        export MISE_ENV="$MISE_ENV_VALUE"
+    fi
+fi
+
+# PostgreSQL defaults (read from runtime config)
 export PGHOST=localhost
-export PGUSER=postgres
-export PGDATABASE=devdb  # Default database when running psql
+if [ -f /var/run/devbox/postgres_user ]; then
+    export PGUSER=$(cat /var/run/devbox/postgres_user)
+else
+    export PGUSER=postgres
+fi
+if [ -f /var/run/devbox/postgres_db ]; then
+    export PGDATABASE=$(cat /var/run/devbox/postgres_db)
+else
+    export PGDATABASE=devdb
+fi
 
 # Install mise if not already installed
 if ! command -v mise &> /dev/null; then

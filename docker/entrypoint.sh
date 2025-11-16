@@ -36,6 +36,10 @@ echo "$TARGET_USERNAME" > /var/run/devbox/user
 echo "$TARGET_UID" > /var/run/devbox/uid
 echo "$TARGET_GID" > /var/run/devbox/gid
 echo "$USER_HOME" > /var/run/devbox/home
+echo "${POSTGRES_USER:-postgres}" > /var/run/devbox/postgres_user
+echo "${POSTGRES_DB:-devdb}" > /var/run/devbox/postgres_db
+echo "${SERVICE_ROOT:-/devbox/}" > /var/run/devbox/service_root
+echo "${MISE_ENV:-}" > /var/run/devbox/mise_env
 chmod 644 /var/run/devbox/*
 
 # ============================================================================

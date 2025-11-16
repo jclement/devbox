@@ -24,6 +24,14 @@ case "${1:-start}" in
     start)
         echo "[caddy] Generating Caddyfile..."
 
+        # Get SERVICE_ROOT from environment or /var/run/devbox
+        if [ -z "$SERVICE_ROOT" ] && [ -f /var/run/devbox/service_root ]; then
+            SERVICE_ROOT=$(cat /var/run/devbox/service_root)
+        fi
+        SERVICE_ROOT="${SERVICE_ROOT:-/devbox/}"
+        # Ensure SERVICE_ROOT ends with /
+        [[ "$SERVICE_ROOT" != */ ]] && SERVICE_ROOT="${SERVICE_ROOT}/"
+
         # Generate Caddyfile based on PASSWORD setting
         if [ -n "$PASSWORD" ]; then
             PASSWORD_HASH=$(caddy hash-password --plaintext "$PASSWORD")
@@ -36,24 +44,24 @@ case "${1:-start}" in
         ${USERNAME} $PASSWORD_HASH
     }
 
-    handle_path /devbox/code/* {
+    handle_path ${SERVICE_ROOT}code/* {
         reverse_proxy localhost:8080
     }
 
-    handle_path /devbox/db/* {
+    handle_path ${SERVICE_ROOT}db/* {
         reverse_proxy localhost:8081
     }
 
-    handle_path /devbox/mail/* {
+    handle_path ${SERVICE_ROOT}mail/* {
         reverse_proxy localhost:8025
     }
 
-    handle_path /devbox/files/* {
+    handle_path ${SERVICE_ROOT}files/* {
         reverse_proxy localhost:8083
     }
 
-    handle /devbox* {
-        uri strip_prefix /devbox
+    handle ${SERVICE_ROOT}* {
+        uri strip_prefix ${SERVICE_ROOT%/}
         reverse_proxy localhost:8082
     }
 
@@ -68,34 +76,34 @@ case "${1:-start}" in
 }
 EOF
         else
-            cat > /etc/caddy/Caddyfile <<'EOF'
+            cat > /etc/caddy/Caddyfile <<EOF
 # WARNING: This file is auto-generated on every startup. Do not edit manually.
 # To customize, modify services/30-caddy.sh
 
 :8443 {
-    handle_path /devbox/code/* {
+    handle_path ${SERVICE_ROOT}code/* {
         reverse_proxy localhost:8080
     }
 
-    handle_path /devbox/db/* {
+    handle_path ${SERVICE_ROOT}db/* {
         reverse_proxy localhost:8081
     }
 
-    handle_path /devbox/mail/* {
+    handle_path ${SERVICE_ROOT}mail/* {
         reverse_proxy localhost:8025
     }
 
-    handle_path /devbox/files/* {
+    handle_path ${SERVICE_ROOT}files/* {
         reverse_proxy localhost:8083
     }
 
-    handle /devbox* {
-        uri strip_prefix /devbox
+    handle ${SERVICE_ROOT}* {
+        uri strip_prefix ${SERVICE_ROOT%/}
         reverse_proxy localhost:8082
     }
 
     handle /* {
-        reverse_proxy localhost:{$DEV_SERVICE_PORT:3000}
+        reverse_proxy localhost:{\$DEV_SERVICE_PORT:3000}
     }
 
     log {

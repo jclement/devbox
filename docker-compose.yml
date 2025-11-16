@@ -42,8 +42,10 @@ services:
 
       # Service Configuration
       DEV_SERVICE_PORT: ${DEV_SERVICE_PORT:-3000}
+      SERVICE_ROOT: ${SERVICE_ROOT:-/devbox/}
       APT_PACKAGES: ${APT_PACKAGES:-}
       MISE_GLOBAL_TOOLS: ${MISE_GLOBAL_TOOLS:-}
+      MISE_ENV: ${MISE_ENV:-}
 
       # Code-Server Configuration
       VSCODE_DEFAULT_EXTENSIONS: ${VSCODE_DEFAULT_EXTENSIONS:-}
