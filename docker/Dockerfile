@@ -7,7 +7,7 @@ COPY devbox-status/ ./
 RUN CGO_ENABLED=0 GOOS=linux go build -o devbox-status .
 
 # Main image
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 # Avoid prompts from apt
 ENV DEBIAN_FRONTEND=noninteractive
