@@ -1,22 +1,8 @@
 # ~/.zshrc
 
-# Add ~/.local/bin to PATH
-export PATH="$HOME/.local/bin:/opt/scripts:$PATH"
-export PROJECT_ROOT="/workspace"
-
 # Terminal colors
 export TERM=xterm-256color
 export COLORTERM=truecolor
-
-# Webroot URL (computed at container startup)
-if [ -f /var/run/devbox/webroot ]; then
-    export WEBROOT=$(cat /var/run/devbox/webroot)
-fi
-
-# PostgreSQL defaults
-export PGHOST=localhost
-export PGUSER=postgres
-export PGDATABASE=devdb  # Default database when running psql
 
 # Enable vim mode
 bindkey -v
@@ -65,12 +51,6 @@ alias psql='psql -h localhost -U postgres'  # Use local postgres by default
 if ! command -v starship &> /dev/null; then
     echo "Starship not found. Installing..."
     curl -sS https://starship.rs/install.sh | sudo sh -s -- -y
-fi
-
-# Install mise if not already installed
-if ! command -v mise &> /dev/null; then
-    echo "mise not found. Installing..."
-    curl https://mise.run | sh
 fi
 
 # Initialize starship prompt
