@@ -37,6 +37,28 @@ setopt AUTO_LIST              # List choices on ambiguous completion
 zstyle ':completion:*' menu select  # Arrow key navigation in completion menu
 zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'  # Case-insensitive completion
 
+# Reverse search with fzf if available
+if command -v fzf &> /dev/null; then
+    # Try modern fzf setup (fzf 0.48.0+)
+    if fzf --zsh &> /dev/null; then
+        eval "$(fzf --zsh)"
+    else
+        # Fall back to manual setup for older fzf versions
+        # History search with Ctrl+R
+        __fzf_history__() {
+            local selected
+            selected=$(fc -rl 1 | fzf --tac --no-sort --query "$LBUFFER" | awk '{$1=""; print
+substr($0,2)}')
+            LBUFFER=$selected
+        }
+        zle -N __fzf_history__
+        bindkey '^R' __fzf_history__
+    fi
+else
+    # Default reverse search if fzf not available
+    bindkey '^R' history-incremental-search-backward
+fi
+
 # Useful aliases
 alias ll='ls -alh'
 alias la='ls -A'

@@ -12,13 +12,6 @@ case "${1:-start}" in
 
         # Install Valkey (Redis-compatible) and redis-cli
         apt-get update
-        apt-get install -y lsb-release curl gpg
-
-        # Add Valkey repository
-        curl -fsSL https://packages.valkey.io/gpg | gpg --dearmor -o /usr/share/keyrings/valkey-archive-keyring.gpg
-        echo "deb [signed-by=/usr/share/keyrings/valkey-archive-keyring.gpg] https://packages.valkey.io/deb $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/valkey.list
-
-        apt-get update
         apt-get install -y valkey
         rm -rf /var/lib/apt/lists/*
 
