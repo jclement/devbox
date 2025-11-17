@@ -81,6 +81,17 @@ RUN LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygi
     && install lazygit /usr/local/bin \
     && rm lazygit lazygit.tar.gz
 
+# Remove default ubuntu user and group if they exist (to avoid UID/GID conflicts)
+RUN set -e; \
+    if id ubuntu >/dev/null 2>&1; then \
+        echo "Removing default ubuntu user"; \
+        userdel -r ubuntu 2>/dev/null || true; \
+    fi; \
+    if getent group ubuntu >/dev/null 2>&1; then \
+        echo "Removing default ubuntu group"; \
+        groupdel ubuntu 2>/dev/null || true; \
+    fi
+
 # Create devbox user (UID/GID 9999, will be modified at runtime)
 RUN set -e; \
     EXISTING_GROUP=$(getent group 9999 | cut -d: -f1 || true); \
