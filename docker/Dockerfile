@@ -66,10 +66,10 @@ RUN ARCH=$(dpkg --print-architecture) \
     else \
         echo "Unsupported architecture: $ARCH" && exit 1; \
     fi \
-    && wget https://github.com/helix-editor/helix/releases/download/24.07/helix-24.07-${HELIX_ARCH}-linux.tar.xz \
-    && tar xf helix-24.07-${HELIX_ARCH}-linux.tar.xz \
-    && mv helix-24.07-${HELIX_ARCH}-linux/hx /usr/local/bin/ \
-    && rm -rf helix-24.07-${HELIX_ARCH}-linux helix-24.07-${HELIX_ARCH}-linux.tar.xz
+    && wget https://github.com/helix-editor/helix/releases/download/25.07.1/helix-25.07.1-${HELIX_ARCH}-linux.tar.xz \
+    && tar xf helix-25.07.1-${HELIX_ARCH}-linux.tar.xz \
+    && mv helix-25.07.1-${HELIX_ARCH}-linux/hx /usr/local/bin/ \
+    && rm -rf helix-25.07.1-${HELIX_ARCH}-linux helix-25.07.1-${HELIX_ARCH}-linux.tar.xz
 
 # Install mise system-wide
 RUN curl https://mise.run | sh && mv ~/.local/bin/mise /usr/local/bin/mise
