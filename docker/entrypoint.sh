@@ -116,6 +116,9 @@ if [ "$CURRENT_USER" != "$TARGET_USERNAME" ]; then
     usermod -d /home/$TARGET_USERNAME -m $TARGET_USERNAME 2>/dev/null || true
 fi
 
+# Ensure shell is set to zsh (in case it was changed or not set correctly)
+usermod -s /bin/zsh $TARGET_USERNAME
+
 # Ensure sudo permissions
 echo "${TARGET_USERNAME} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${TARGET_USERNAME}
 chmod 0440 /etc/sudoers.d/${TARGET_USERNAME}
