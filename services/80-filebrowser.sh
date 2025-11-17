@@ -15,7 +15,7 @@ case "${1:-start}" in
 
     start)
         echo "[filebrowser] Starting file browser..."
-        exec su - ${USERNAME} -c "/usr/local/bin/filebrowser --address 127.0.0.1 --port 8083 --root /workspace --noauth --baseurl /devbox/files"
+        exec su - ${USERNAME} -c "/usr/local/bin/filebrowser --address 127.0.0.1 --port 8083 --root /workspace --noauth --baseurl ${SERVICE_ROOT}files"
         ;;
 
     stop)

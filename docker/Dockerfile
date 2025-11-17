@@ -42,6 +42,7 @@ RUN apt-get update && apt -y upgrade && apt-get install -y \
     build-essential \
     unzip \
     ripgrep \
+    psmisc \
     magic-wormhole \
     fzf \
     socat \
@@ -148,7 +149,9 @@ RUN for script in /opt/services/*.sh; do \
         $script install || true; \
     done
 
-# Caddyfile is now created by caddy install script
+# Caddyfile offline page
+RUN mkdir -p /opt/caddy
+COPY docker/offline.html /opt/caddy/offline.html
 
 # Create s6-overlay service directories
 RUN mkdir -p /etc/s6-overlay/s6-rc.d/user/contents.d
