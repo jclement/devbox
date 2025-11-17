@@ -594,7 +594,8 @@ func handleStatus(w http.ResponseWriter, r *http.Request) {
     </div>
 
     <script>
-        const basePath = '/devbox';
+        // Use relative URLs since we're served from SERVICE_ROOT
+        const basePath = '.';
 
         // Toast Notification System
         function showToast(title, message, type = 'success') {
