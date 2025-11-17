@@ -17,7 +17,8 @@ case "${1:-start}" in
 
     start)
         echo "[mailhog] Starting MailHog..."
-        exec /usr/local/bin/mailhog -smtp-bind-addr 127.0.0.1:1025 -ui-bind-addr 127.0.0.1:8025 -api-bind-addr 127.0.0.1:8026
+        # Serve UI and API on the same port (8025) to avoid proxy issues
+        exec /usr/local/bin/mailhog -smtp-bind-addr 127.0.0.1:1025 -ui-bind-addr 127.0.0.1:8025 -api-bind-addr 127.0.0.1:8025
         ;;
 
     stop)
