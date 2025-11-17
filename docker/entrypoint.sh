@@ -11,9 +11,12 @@ NC='\033[0m'
 
 echo -e "${BLUE}DevBox Entrypoint${NC}"
 
+# folder for devbox configuration files
 mkdir -p /var/run/devbox
 
+# ============================================================================
 # Set timezone
+# ============================================================================
 TZ="${TZ:-UTC}"
 if [ -f "/usr/share/zoneinfo/$TZ" ]; then
     ln -sf /usr/share/zoneinfo/$TZ /etc/localtime
@@ -26,16 +29,64 @@ else
     TZ="UTC"
 fi
 
-# Set variables
+# ============================================================================
+# USER CONFIGURATION (dynamic mapping based on stored state)
+# ============================================================================
 TARGET_UID=${USER_UID:-1000}
 TARGET_GID=${USER_GID:-1000}
 TARGET_USERNAME=${USERNAME:-devbox}
-USER_HOME="/home/${TARGET_USERNAME}"
+TARGET_HOME="/home/${TARGET_USERNAME}"
 
+# Read current state from /var/run/devbox (defaults to base image values if not set)
+CURRENT_USERNAME=$(cat /var/run/devbox/user 2>/dev/null || echo "devbox")
+CURRENT_UID=$(cat /var/run/devbox/uid 2>/dev/null || echo "9999")
+CURRENT_GID=$(cat /var/run/devbox/gid 2>/dev/null || echo "9999")
+
+echo -e "${GREEN}User configuration check:${NC}"
+echo -e "  Current: ${CURRENT_USERNAME}:${CURRENT_UID}:${CURRENT_GID}"
+echo -e "  Target:  ${TARGET_USERNAME}:${TARGET_UID}:${TARGET_GID}"
+
+# Check if any changes are needed
+NEEDS_UPDATE=false
+if [ "$CURRENT_GID" != "$TARGET_GID" ] || [ "$CURRENT_UID" != "$TARGET_UID" ] || [ "$CURRENT_USERNAME" != "$TARGET_USERNAME" ]; then
+    NEEDS_UPDATE=true
+fi
+
+if [ "$NEEDS_UPDATE" = true ]; then
+    echo -e "${YELLOW}Updating user configuration...${NC}"
+
+    # Update GID if needed
+    if [ "$CURRENT_GID" != "$TARGET_GID" ]; then
+        echo -e "  Updating GID: $CURRENT_GID -> $TARGET_GID"
+        groupmod -g $TARGET_GID $CURRENT_USERNAME 2>/dev/null || true
+    fi
+
+    # Update UID if needed
+    if [ "$CURRENT_UID" != "$TARGET_UID" ]; then
+        echo -e "  Updating UID: $CURRENT_UID -> $TARGET_UID"
+        usermod -u $TARGET_UID $CURRENT_USERNAME
+    fi
+
+    # Rename user if needed
+    if [ "$CURRENT_USERNAME" != "$TARGET_USERNAME" ]; then
+        echo -e "  Renaming user: $CURRENT_USERNAME -> $TARGET_USERNAME"
+        usermod -l $TARGET_USERNAME $CURRENT_USERNAME
+        groupmod -n $TARGET_USERNAME $CURRENT_USERNAME 2>/dev/null || true
+        usermod -d /home/$TARGET_USERNAME -m $TARGET_USERNAME 2>/dev/null || true
+    fi
+
+    echo -e "${GREEN}User configuration updated${NC}"
+else
+    echo -e "${GREEN}User configuration unchanged${NC}"
+fi
+
+# ============================================================================
+# USER CONFIGURATION (dynamic mapping based on stored state)
+# ============================================================================
 echo "$TARGET_USERNAME" > /var/run/devbox/user
 echo "$TARGET_UID" > /var/run/devbox/uid
 echo "$TARGET_GID" > /var/run/devbox/gid
-echo "$USER_HOME" > /var/run/devbox/home
+echo "$TARGET_HOME" > /var/run/devbox/home
 echo "${POSTGRES_USER:-postgres}" > /var/run/devbox/postgres_user
 echo "${POSTGRES_DB:-devdb}" > /var/run/devbox/postgres_db
 echo "${SERVICE_ROOT:-/devbox/}" > /var/run/devbox/service_root
@@ -89,37 +140,8 @@ if [ -n "$CF_TUNNEL_TOKEN" ]; then
     unset CF_TUNNEL_TOKEN
 fi
 
-# ============================================================================
-# USER CONFIGURATION (always run to handle UID/GID/username changes)
-# ============================================================================
-echo -e "${GREEN}Configuring user: ${TARGET_USERNAME} (UID=${TARGET_UID}, GID=${TARGET_GID})${NC}"
 
-# Start with the base user (devbox or whatever currently exists)
-CURRENT_USER=$(id -un $TARGET_UID 2>/dev/null || echo "devbox")
-
-# Update GID if needed
-CURRENT_GID=$(id -g $CURRENT_USER 2>/dev/null || echo "")
-if [ -n "$CURRENT_GID" ] && [ "$CURRENT_GID" != "$TARGET_GID" ]; then
-    groupmod -g $TARGET_GID $CURRENT_USER 2>/dev/null || true
-fi
-
-# Update UID if needed
-CURRENT_UID=$(id -u $CURRENT_USER 2>/dev/null || echo "")
-if [ -n "$CURRENT_UID" ] && [ "$CURRENT_UID" != "$TARGET_UID" ]; then
-    usermod -u $TARGET_UID $CURRENT_USER
-fi
-
-# Rename user if needed
-if [ "$CURRENT_USER" != "$TARGET_USERNAME" ]; then
-    usermod -l $TARGET_USERNAME $CURRENT_USER
-    groupmod -n $TARGET_USERNAME $CURRENT_USER 2>/dev/null || true
-    usermod -d /home/$TARGET_USERNAME -m $TARGET_USERNAME 2>/dev/null || true
-fi
-
-# Ensure shell is set to zsh (in case it was changed or not set correctly)
-usermod -s /bin/zsh $TARGET_USERNAME
-
-# Ensure sudo permissions
+# Ensure sudo permissions (always update)
 echo "${TARGET_USERNAME} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${TARGET_USERNAME}
 chmod 0440 /etc/sudoers.d/${TARGET_USERNAME}
 
@@ -133,22 +155,22 @@ if [ ! -f "/state/devbox-initialized" ]; then
     chown -R $TARGET_UID:$TARGET_GID /home/$TARGET_USERNAME /workspace /snapshots 2>/dev/null || true
 
     # Git config (copy from host if available)
-    [ -f "${USER_HOME}/.gitconfig-host" ] && cp "${USER_HOME}/.gitconfig-host" "${USER_HOME}/.gitconfig"
+    [ -f "${TARGET_HOME}/.gitconfig-host" ] && cp "${TARGET_HOME}/.gitconfig-host" "${TARGET_HOME}/.gitconfig"
 
     # Copy dotfiles (first time only - won't overwrite existing files)
     if [ -d "/etc/dotfiles" ]; then
         echo -e "${GREEN}Copying dotfiles from /etc/dotfiles${NC}"
-        cp -rn /etc/dotfiles/. ${USER_HOME}/ 2>/dev/null || true
+        cp -rn /etc/dotfiles/. ${TARGET_HOME}/ 2>/dev/null || true
         # Fix ownership of copied files (skip .ssh bind mount and read-only mounts)
-        find ${USER_HOME} -path ${USER_HOME}/.ssh -prune -o -type f -writable -exec chown ${TARGET_USERNAME}:${TARGET_USERNAME} {} + 2>/dev/null || true
-        find ${USER_HOME} -path ${USER_HOME}/.ssh -prune -o -type d -writable -exec chown ${TARGET_USERNAME}:${TARGET_USERNAME} {} + 2>/dev/null || true
+        find ${TARGET_HOME} -path ${TARGET_HOME}/.ssh -prune -o -type f -writable -exec chown ${TARGET_USERNAME}:${TARGET_USERNAME} {} + 2>/dev/null || true
+        find ${TARGET_HOME} -path ${TARGET_HOME}/.ssh -prune -o -type d -writable -exec chown ${TARGET_USERNAME}:${TARGET_USERNAME} {} + 2>/dev/null || true
     fi
 
     # Configure git SSH signing if ed25519 key exists
-    if [ -f "${USER_HOME}/.ssh/id_ed25519.pub" ]; then
+    if [ -f "${TARGET_HOME}/.ssh/id_ed25519.pub" ]; then
         echo -e "${GREEN}Configuring git SSH signing${NC}"
         su - ${TARGET_USERNAME} -s /bin/zsh -c "git config --global gpg.format ssh" 2>/dev/null || true
-        su - ${TARGET_USERNAME} -s /bin/zsh -c "git config --global user.signingkey '${USER_HOME}/.ssh/id_ed25519.pub'" 2>/dev/null || true
+        su - ${TARGET_USERNAME} -s /bin/zsh -c "git config --global user.signingkey '${TARGET_HOME}/.ssh/id_ed25519.pub'" 2>/dev/null || true
         su - ${TARGET_USERNAME} -s /bin/zsh -c "git config --global commit.gpgsign true" 2>/dev/null || true
     fi
 
@@ -175,10 +197,10 @@ fi
 
 # Ensure dotfiles exist (cp -n only copies files that don't exist, won't overwrite user changes)
 if [ -d "/etc/dotfiles" ]; then
-    cp -rn /etc/dotfiles/. ${USER_HOME}/ 2>/dev/null || true
+    cp -rn /etc/dotfiles/. ${TARGET_HOME}/ 2>/dev/null || true
     # Fix ownership of files we created (skip .ssh bind mount and read-only mounts)
-    find ${USER_HOME} -path ${USER_HOME}/.ssh -prune -o -type f -writable -exec chown ${TARGET_USERNAME}:${TARGET_USERNAME} {} + 2>/dev/null || true
-    find ${USER_HOME} -path ${USER_HOME}/.ssh -prune -o -type d -writable -exec chown ${TARGET_USERNAME}:${TARGET_USERNAME} {} + 2>/dev/null || true
+    find ${TARGET_HOME} -path ${TARGET_HOME}/.ssh -prune -o -type f -writable -exec chown ${TARGET_USERNAME}:${TARGET_USERNAME} {} + 2>/dev/null || true
+    find ${TARGET_HOME} -path ${TARGET_HOME}/.ssh -prune -o -type d -writable -exec chown ${TARGET_USERNAME}:${TARGET_USERNAME} {} + 2>/dev/null || true
 fi
 
 # Ensure workspace/snapshots ownership
