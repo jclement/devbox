@@ -55,6 +55,24 @@ fi
 if [ "$NEEDS_UPDATE" = true ]; then
     echo -e "${YELLOW}Updating user configuration...${NC}"
 
+    # Check for and remove conflicting users/groups at target UID/GID
+    # (in case image has default users we couldn't remove at build time)
+    if [ "$CURRENT_UID" != "$TARGET_UID" ]; then
+        CONFLICTING_USER=$(id -un $TARGET_UID 2>/dev/null || true)
+        if [ -n "$CONFLICTING_USER" ] && [ "$CONFLICTING_USER" != "$CURRENT_USERNAME" ]; then
+            echo -e "  ${YELLOW}Removing conflicting user '$CONFLICTING_USER' at UID $TARGET_UID${NC}"
+            userdel -r $CONFLICTING_USER 2>/dev/null || userdel $CONFLICTING_USER 2>/dev/null || true
+        fi
+    fi
+
+    if [ "$CURRENT_GID" != "$TARGET_GID" ]; then
+        CONFLICTING_GROUP=$(getent group $TARGET_GID | cut -d: -f1 || true)
+        if [ -n "$CONFLICTING_GROUP" ] && [ "$CONFLICTING_GROUP" != "$CURRENT_USERNAME" ]; then
+            echo -e "  ${YELLOW}Removing conflicting group '$CONFLICTING_GROUP' at GID $TARGET_GID${NC}"
+            groupdel $CONFLICTING_GROUP 2>/dev/null || true
+        fi
+    fi
+
     # Update GID if needed
     if [ "$CURRENT_GID" != "$TARGET_GID" ]; then
         echo -e "  Updating GID: $CURRENT_GID -> $TARGET_GID"
@@ -74,6 +92,9 @@ if [ "$NEEDS_UPDATE" = true ]; then
         groupmod -n $TARGET_USERNAME $CURRENT_USERNAME 2>/dev/null || true
         usermod -d /home/$TARGET_USERNAME -m $TARGET_USERNAME 2>/dev/null || true
     fi
+
+    # Ensure shell is set to zsh
+    usermod -s /bin/zsh $TARGET_USERNAME
 
     echo -e "${GREEN}User configuration updated${NC}"
 else
