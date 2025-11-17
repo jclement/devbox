@@ -69,6 +69,7 @@ RUN ARCH=$(dpkg --print-architecture) \
     && wget https://github.com/helix-editor/helix/releases/download/25.07.1/helix-25.07.1-${HELIX_ARCH}-linux.tar.xz \
     && tar xf helix-25.07.1-${HELIX_ARCH}-linux.tar.xz \
     && mv helix-25.07.1-${HELIX_ARCH}-linux/hx /usr/local/bin/ \
+    && mv helix-25.07.1-${HELIX_ARCH}-linux/runtime /usr/local/bin/runtime \
     && rm -rf helix-25.07.1-${HELIX_ARCH}-linux helix-25.07.1-${HELIX_ARCH}-linux.tar.xz
 
 # Install mise system-wide
