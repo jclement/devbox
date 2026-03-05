@@ -230,7 +230,7 @@ chown ${TARGET_USERNAME}:${TARGET_USERNAME} /workspace /snapshots 2>/dev/null ||
 # Install additional APT packages if specified
 if [ -n "$APT_PACKAGES" ]; then
     echo -e "${GREEN}Installing additional APT packages: ${APT_PACKAGES}${NC}"
-    apt-get update > /dev/null 2>&1
+    apt-get update || echo -e "${YELLOW}Warning: apt-get update failed${NC}"
     apt-get install -y $APT_PACKAGES || echo -e "${YELLOW}Warning: Failed to install some packages${NC}"
     rm -rf /var/lib/apt/lists/*
 fi
