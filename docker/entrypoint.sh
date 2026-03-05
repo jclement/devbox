@@ -229,10 +229,35 @@ chown ${TARGET_USERNAME}:${TARGET_USERNAME} /workspace /snapshots 2>/dev/null ||
 
 # Install additional APT packages if specified
 if [ -n "$APT_PACKAGES" ]; then
-    echo -e "${GREEN}Installing additional APT packages: ${APT_PACKAGES}${NC}"
-    apt-get update || echo -e "${YELLOW}Warning: apt-get update failed${NC}"
-    apt-get install -y $APT_PACKAGES || echo -e "${YELLOW}Warning: Failed to install some packages${NC}"
-    rm -rf /var/lib/apt/lists/*
+    # Check which packages are not yet installed
+    MISSING_PACKAGES=""
+    for pkg in $APT_PACKAGES; do
+        if ! dpkg -s "$pkg" > /dev/null 2>&1; then
+            MISSING_PACKAGES="$MISSING_PACKAGES $pkg"
+        fi
+    done
+
+    if [ -n "$MISSING_PACKAGES" ]; then
+        echo -e "${GREEN}Installing additional APT packages:${MISSING_PACKAGES}${NC}"
+        APT_UPDATED=false
+        for attempt in 1 2 3; do
+            if apt-get update; then
+                APT_UPDATED=true
+                break
+            fi
+            echo -e "${YELLOW}apt-get update failed (attempt $attempt/3), retrying in 3s...${NC}"
+            sleep 3
+        done
+
+        if [ "$APT_UPDATED" = true ]; then
+            apt-get install -y $MISSING_PACKAGES || echo -e "${YELLOW}Warning: Failed to install some packages${NC}"
+        else
+            echo -e "${YELLOW}Warning: apt-get update failed after 3 attempts, skipping package install${NC}"
+        fi
+        rm -rf /var/lib/apt/lists/*
+    else
+        echo -e "${GREEN}All APT packages already installed${NC}"
+    fi
 fi
 
 # Install mise global tools if specified
